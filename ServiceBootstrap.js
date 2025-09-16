@@ -26,6 +26,16 @@ const RevenueTransparencyServiceImpl = require('./layer-3-business-logic/service
 const FeatureFlagServiceImpl = require('./layer-3-business-logic/services/FeatureFlagServiceImpl');
 const LiberationMetricsServiceImpl = require('./layer-3-business-logic/services/LiberationMetricsServiceImpl');
 
+// PHASE 4: Import interface contracts for enforcement
+const {
+  ICreatorSovereigntyService,
+  IDemocraticGovernanceService,
+  ICommunityProtectionService,
+  IRevenueTransparencyService,
+  IFeatureFlagService,
+  ILiberationMetricsService
+} = require('./contracts/business-logic-interfaces');
+
 /**
  * Bootstrap all services with proper dependency injection
  * This replaces manual service instantiation with container-managed dependencies
@@ -45,13 +55,25 @@ function bootstrapAllServices() {
     container.register('eventsLiberationService', EventsLiberationService, ['economicJusticeService']);
     container.register('ivorAILiberationService', IvorAILiberationService, ['economicJusticeService']);
 
-    // LAYER 3: Contract Implementation Services (Advanced DI)
-    container.register('creatorSovereigntyService', CreatorSovereigntyServiceImpl, []);
-    container.register('democraticGovernanceService', DemocraticGovernanceServiceImpl, []);
-    container.register('communityProtectionService', CommunityProtectionServiceImpl, []);
-    container.register('revenueTransparencyService', RevenueTransparencyServiceImpl, ['economicJusticeService']);
-    container.register('featureFlagService', FeatureFlagServiceImpl, []);
-    container.register('liberationMetricsService', LiberationMetricsServiceImpl, []);
+    // LAYER 3: Contract Implementation Services (Phase 4: With Interface Enforcement)
+    container.register('creatorSovereigntyService', CreatorSovereigntyServiceImpl, [], {
+      interface: ICreatorSovereigntyService
+    });
+    container.register('democraticGovernanceService', DemocraticGovernanceServiceImpl, [], {
+      interface: IDemocraticGovernanceService
+    });
+    container.register('communityProtectionService', CommunityProtectionServiceImpl, [], {
+      interface: ICommunityProtectionService
+    });
+    container.register('revenueTransparencyService', RevenueTransparencyServiceImpl, ['economicJusticeService'], {
+      interface: IRevenueTransparencyService
+    });
+    container.register('featureFlagService', FeatureFlagServiceImpl, [], {
+      interface: IFeatureFlagService
+    });
+    container.register('liberationMetricsService', LiberationMetricsServiceImpl, [], {
+      interface: ILiberationMetricsService
+    });
 
     // LAYER 3: Orchestrator (With dependency injection)
     container.register('liberationOrchestrator', LiberationBusinessLogicOrchestrator, [
