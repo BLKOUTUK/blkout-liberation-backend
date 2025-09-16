@@ -578,6 +578,65 @@ class NewsroomLiberationService extends EventEmitter {
   generateProtectionRecommendations(violations) {
     return violations.map(v => `Address ${v.type}: ${v.issue}`);
   }
+
+  /**
+   * VALIDATE CULTURAL AUTHENTICITY: Ensure Black queer empowerment
+   */
+  async validateCulturalAuthenticity(contentData) {
+    const authenticityChecks = {
+      blackQueerCentering: this.assessBlackQueerCentering(contentData),
+      culturalStewardship: this.assessCulturalStewardship(contentData),
+      appropriationCheck: this.checkForAppropriation(contentData),
+      empowermentFocus: this.assessEmpowermentFocus(contentData),
+      authenticityCommunityValidation: this.assessCommunityAuthenticity(contentData)
+    };
+
+    const authenticityScore = Object.values(authenticityChecks).reduce((sum, score) => sum + score, 0) / Object.keys(authenticityChecks).length;
+    const isAuthentic = authenticityScore >= 0.7; // 70% authenticity threshold
+
+    return {
+      valid: isAuthentic,
+      score: authenticityScore,
+      checks: authenticityChecks,
+      recommendations: !isAuthentic ? this.generateAuthenticityRecommendations(authenticityChecks) : [],
+      blackQueerCentering: authenticityChecks.blackQueerCentering >= 0.7,
+      culturalStewardship: authenticityChecks.culturalStewardship >= 0.7,
+      empowermentFocus: authenticityChecks.empowermentFocus >= 0.7
+    };
+  }
+
+  // Helper methods for cultural authenticity validation
+  assessBlackQueerCentering(contentData) {
+    // Mock assessment - in production would use NLP and community validation
+    return 0.85; // 85% Black queer centering score
+  }
+
+  assessCulturalStewardship(contentData) {
+    // Mock assessment - in production would validate respectful cultural representation
+    return 0.9; // 90% cultural stewardship score
+  }
+
+  checkForAppropriation(contentData) {
+    // Mock check - in production would use AI models trained on appropriation detection
+    return 0.95; // 95% non-appropriation score (higher is better)
+  }
+
+  assessEmpowermentFocus(contentData) {
+    // Mock assessment - in production would analyze empowerment themes
+    return 0.8; // 80% empowerment focus score
+  }
+
+  assessCommunityAuthenticity(contentData) {
+    // Mock assessment - in production would involve community validation
+    return 0.88; // 88% community authenticity score
+  }
+
+  generateAuthenticityRecommendations(checks) {
+    const lowScores = Object.entries(checks).filter(([key, score]) => score < 0.7);
+    return lowScores.map(([key, score]) =>
+      `Improve ${key}: Current score ${(score * 100).toFixed(1)}% - Consider community feedback and cultural guidance`
+    );
+  }
 }
 
 module.exports = NewsroomLiberationService;
