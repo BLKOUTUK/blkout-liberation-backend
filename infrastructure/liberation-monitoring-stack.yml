@@ -1,0 +1,625 @@
+# Liberation Monitoring Stack Configuration
+# Real-time tracking of liberation values and community protection
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: liberation-monitoring-config
+  namespace: blkout-staging
+  labels:
+    component: liberation-monitoring
+data:
+  # ===== PROMETHEUS CONFIGURATION =====
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        environment: 'staging'
+        platform: 'blkout-liberation'
+
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+
+    scrape_configs:
+      # Liberation Values Metrics
+      - job_name: 'liberation-values'
+        static_configs:
+          - targets: ['liberation-metrics-exporter:8080']
+        scrape_interval: 10s
+        metrics_path: '/metrics/liberation'
+
+      # Creator Sovereignty Metrics
+      - job_name: 'creator-sovereignty'
+        static_configs:
+          - targets: ['creator-sovereignty-service:8080']
+        scrape_interval: 15s
+        metrics_path: '/metrics/sovereignty'
+
+      # Democratic Governance Metrics
+      - job_name: 'democratic-governance'
+        static_configs:
+          - targets: ['governance-service:8080']
+        scrape_interval: 30s
+        metrics_path: '/metrics/governance'
+
+      # Community Protection Metrics
+      - job_name: 'community-protection'
+        static_configs:
+          - targets: ['anti-oppression-service:8080']
+        scrape_interval: 20s
+        metrics_path: '/metrics/protection'
+
+      # Infrastructure Health
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - blkout-staging
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+
+      # Redis Community Sovereignty
+      - job_name: 'redis-sovereignty'
+        static_configs:
+          - targets: ['redis-community-cluster:6379']
+        scrape_interval: 30s
+
+  # Liberation Values Alert Rules
+  liberation-alerts.yml: |
+    groups:
+      - name: liberation-values-alerts
+        rules:
+          # Creator Sovereignty Critical Alert
+          - alert: CreatorSovereigntyBelowMinimum
+            expr: creator_sovereignty_percentage < 75
+            for: 1m
+            labels:
+              severity: critical
+              component: creator-sovereignty
+              liberation_principle: economic_justice
+            annotations:
+              summary: "Creator sovereignty below 75% minimum"
+              description: "Creator sovereignty at {{ $value }}%, below required 75% minimum"
+              action_required: "Immediate rollback and creator sovereignty restoration"
+
+          # Democratic Participation Alert
+          - alert: DemocraticParticipationLow
+            expr: democratic_participation_rate < 50
+            for: 5m
+            labels:
+              severity: warning
+              component: democratic-governance
+              liberation_principle: democratic_control
+            annotations:
+              summary: "Democratic participation rate below threshold"
+              description: "Only {{ $value }}% of community participating in governance"
+              action_required: "Increase community engagement and accessibility"
+
+          # Community Protection Alert
+          - alert: CommunityProtectionFailure
+            expr: community_protection_effectiveness < 95
+            for: 2m
+            labels:
+              severity: error
+              component: community-protection
+              liberation_principle: anti_oppression
+            annotations:
+              summary: "Community protection effectiveness degraded"
+              description: "Protection effectiveness at {{ $value }}%, below 95% target"
+              action_required: "Review and enhance anti-oppression measures"
+
+          # Cultural Authenticity Alert
+          - alert: CulturalAuthenticityDegraded
+            expr: cultural_authenticity_score < 85
+            for: 3m
+            labels:
+              severity: warning
+              component: cultural-preservation
+              liberation_principle: cultural_authenticity
+            annotations:
+              summary: "Cultural authenticity score declining"
+              description: "Cultural authenticity at {{ $value }}%, below 85% target"
+              action_required: "Review content for cultural alignment"
+
+          # Liberation Values Health Check
+          - alert: LiberationValuesHealthCheckFailed
+            expr: up{job="liberation-values"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              component: liberation-monitoring
+            annotations:
+              summary: "Liberation values monitoring down"
+              description: "Cannot monitor liberation values compliance"
+              action_required: "Restore liberation monitoring immediately"
+
+      - name: infrastructure-liberation-alerts
+        rules:
+          # Database Liberation Compliance
+          - alert: DatabaseLiberationConstraintViolated
+            expr: database_liberation_constraint_violations > 0
+            for: 0s
+            labels:
+              severity: critical
+              component: database
+              liberation_principle: mathematical_enforcement
+            annotations:
+              summary: "Database liberation constraint violated"
+              description: "{{ $value }} liberation constraints violated in database"
+              action_required: "Immediate investigation and correction"
+
+          # Redis Community Sovereignty
+          - alert: RedisCommunityConsentViolated
+            expr: redis_consent_violations > 0
+            for: 0s
+            labels:
+              severity: error
+              component: redis
+              liberation_principle: community_consent
+            annotations:
+              summary: "Redis community consent violation detected"
+              description: "{{ $value }} consent violations in Redis operations"
+              action_required: "Review and correct consent management"
+
+  # Grafana Dashboard Configuration
+  grafana-dashboards.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "BLKOUT Liberation Platform - Community Values Dashboard",
+        "tags": ["liberation", "community", "sovereignty"],
+        "timezone": "UTC",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Creator Sovereignty Percentage",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "creator_sovereignty_percentage",
+                "legendFormat": "Creator Share %"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "min": 0,
+                "max": 100,
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 74},
+                    {"color": "green", "value": 75}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Democratic Participation Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "democratic_participation_rate",
+                "legendFormat": "Participation %"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Community Protection Effectiveness",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "community_protection_effectiveness",
+                "legendFormat": "Protection %"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Anti-Oppression Success Rate",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "anti_oppression_success_rate",
+                "legendFormat": "Success %"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Cultural Authenticity Score",
+            "type": "gauge",
+            "targets": [
+              {
+                "expr": "cultural_authenticity_score",
+                "legendFormat": "Cultural Authenticity"
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "title": "Liberation Values Health Status",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "up{job=~\"liberation.*\"}",
+                "legendFormat": "{{job}}"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "10s"
+      }
+    }
+
+---
+# Prometheus Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-liberation
+  namespace: blkout-staging
+  labels:
+    app: prometheus
+    component: liberation-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        component: liberation-monitoring
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.40.0
+        ports:
+        - containerPort: 9090
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--storage.tsdb.retention.time=7d'
+          - '--web.enable-lifecycle'
+          - '--web.enable-admin-api'
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-storage
+          mountPath: /prometheus
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: prometheus-config
+        configMap:
+          name: liberation-monitoring-config
+      - name: prometheus-storage
+        persistentVolumeClaim:
+          claimName: prometheus-storage
+
+---
+# Grafana Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-liberation
+  namespace: blkout-staging
+  labels:
+    app: grafana
+    component: liberation-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+        component: liberation-monitoring
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:9.3.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: staging-liberation-secrets
+              key: GRAFANA_ADMIN_PASSWORD
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-piechart-panel,grafana-worldmap-panel"
+        - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
+          value: "/var/lib/grafana/dashboards/liberation-dashboard.json"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-dashboards
+          mountPath: /var/lib/grafana/dashboards
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-storage
+      - name: grafana-dashboards
+        configMap:
+          name: liberation-monitoring-config
+          items:
+          - key: grafana-dashboards.json
+            path: liberation-dashboard.json
+
+---
+# Liberation Metrics Exporter
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: liberation-metrics-exporter
+  namespace: blkout-staging
+  labels:
+    app: liberation-metrics-exporter
+    component: liberation-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: liberation-metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: liberation-metrics-exporter
+        component: liberation-monitoring
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics/liberation"
+    spec:
+      containers:
+      - name: metrics-exporter
+        image: node:18-alpine
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://blkout_service:${DATABASE_PASSWORD}@staging-db.blkout-platform.internal:5432/blkout_liberation_staging"
+        - name: REDIS_URL
+          value: "redis://:${REDIS_PASSWORD}@redis-community-cluster:6379"
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            cat > app.js << 'EOF'
+            const express = require('express');
+            const { Pool } = require('pg');
+            const redis = require('redis');
+
+            const app = express();
+            const port = 8080;
+
+            // Database connection
+            const pool = new Pool({
+              connectionString: process.env.DATABASE_URL
+            });
+
+            // Redis connection
+            const redisClient = redis.createClient({
+              url: process.env.REDIS_URL
+            });
+
+            // Liberation metrics endpoint
+            app.get('/metrics/liberation', async (req, res) => {
+              try {
+                // Creator sovereignty metrics
+                const sovereigntyResult = await pool.query(`
+                  SELECT AVG(sovereignty_score) as avg_sovereignty
+                  FROM creator_revenue_tracking
+                  WHERE created_at > NOW() - INTERVAL '1 hour'
+                `);
+
+                const avgSovereignty = sovereigntyResult.rows[0]?.avg_sovereignty || 0.75;
+
+                // Democratic participation metrics
+                const participationResult = await pool.query(`
+                  SELECT COUNT(DISTINCT member_id) * 100.0 /
+                         (SELECT COUNT(*) FROM community_members WHERE active = true) as participation_rate
+                  FROM community_voting_records
+                  WHERE vote_timestamp > NOW() - INTERVAL '24 hours'
+                `);
+
+                const participationRate = participationResult.rows[0]?.participation_rate || 0;
+
+                // Community protection metrics
+                const protectionResult = await pool.query(`
+                  SELECT COUNT(CASE WHEN oppression_detected = false THEN 1 END) * 100.0 /
+                         COUNT(*) as protection_effectiveness
+                  FROM anti_oppression_reviews
+                  WHERE reviewed_at > NOW() - INTERVAL '1 hour'
+                `);
+
+                const protectionEffectiveness = protectionResult.rows[0]?.protection_effectiveness || 100;
+
+                // Cultural authenticity metrics
+                const authenticityResult = await pool.query(`
+                  SELECT AVG(cultural_authenticity_score) * 100 as authenticity_score
+                  FROM anti_oppression_reviews
+                  WHERE reviewed_at > NOW() - INTERVAL '1 hour'
+                `);
+
+                const authenticityScore = authenticityResult.rows[0]?.authenticity_score || 90;
+
+                // Format as Prometheus metrics
+                const metrics = `# HELP creator_sovereignty_percentage Current creator sovereignty percentage
+            # TYPE creator_sovereignty_percentage gauge
+            creator_sovereignty_percentage ${(avgSovereignty * 100).toFixed(2)}
+
+            # HELP democratic_participation_rate Democratic participation rate in last 24h
+            # TYPE democratic_participation_rate gauge
+            democratic_participation_rate ${participationRate.toFixed(2)}
+
+            # HELP community_protection_effectiveness Community protection effectiveness percentage
+            # TYPE community_protection_effectiveness gauge
+            community_protection_effectiveness ${protectionEffectiveness.toFixed(2)}
+
+            # HELP cultural_authenticity_score Cultural authenticity score
+            # TYPE cultural_authenticity_score gauge
+            cultural_authenticity_score ${authenticityScore.toFixed(2)}
+
+            # HELP liberation_values_health_check Liberation values monitoring health
+            # TYPE liberation_values_health_check gauge
+            liberation_values_health_check 1
+            `;
+
+                res.set('Content-Type', 'text/plain');
+                res.send(metrics);
+              } catch (error) {
+                console.error('Error generating liberation metrics:', error);
+                res.status(500).send('Error generating metrics');
+              }
+            });
+
+            app.listen(port, () => {
+              console.log(`Liberation metrics exporter listening on port ${port}`);
+            });
+            EOF
+
+            npm init -y
+            npm install express pg redis
+            node app.js
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-liberation
+  namespace: blkout-staging
+  labels:
+    app: prometheus
+    component: liberation-monitoring
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+    name: web
+  selector:
+    app: prometheus
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-liberation
+  namespace: blkout-staging
+  labels:
+    app: grafana
+    component: liberation-monitoring
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: web
+  selector:
+    app: grafana
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: liberation-metrics-exporter
+  namespace: blkout-staging
+  labels:
+    app: liberation-metrics-exporter
+    component: liberation-monitoring
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: metrics
+  selector:
+    app: liberation-metrics-exporter
+
+---
+# Persistent Volume Claims
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-storage
+  namespace: blkout-staging
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-storage
+  namespace: blkout-staging
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: fast-ssd

@@ -1,0 +1,350 @@
+# Redis Cluster Configuration for Community Data Sovereignty
+# BLKOUT Liberation Platform - Staging Environment
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-community-sovereignty-config
+  namespace: blkout-staging
+  labels:
+    component: redis-cluster
+    sovereignty-level: community-controlled
+data:
+  # ===== REDIS CLUSTER CONFIGURATION =====
+  redis.conf: |
+    # Basic Redis configuration for community data sovereignty
+    bind 0.0.0.0
+    port 6379
+    protected-mode yes
+    requirepass ${REDIS_PASSWORD}
+
+    # Cluster configuration
+    cluster-enabled yes
+    cluster-config-file nodes.conf
+    cluster-node-timeout 15000
+    cluster-announce-ip ${POD_IP}
+    cluster-announce-port 6379
+
+    # Community data sovereignty settings
+    maxmemory 2gb
+    maxmemory-policy allkeys-lru
+
+    # Persistence for community data protection
+    save 900 1
+    save 300 10
+    save 60 10000
+
+    # AOF for data durability
+    appendonly yes
+    appendfsync everysec
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+
+    # Security for community protection
+    rename-command FLUSHDB ""
+    rename-command FLUSHALL ""
+    rename-command DEBUG ""
+    rename-command CONFIG "CONFIG_COMMUNITY_PROTECTED"
+
+    # Logging for transparency
+    loglevel notice
+    logfile /var/log/redis/redis-server.log
+
+  # Community consent tracking configuration
+  consent-tracking.lua: |
+    -- Community Consent Tracking Script for Redis
+    -- Ensures all data operations respect community consent
+
+    local function validate_community_consent(data_key, operation_type)
+        local consent_key = "consent:" .. data_key
+        local consent_data = redis.call('HGETALL', consent_key)
+
+        if #consent_data == 0 then
+            return false, "No consent record found"
+        end
+
+        local consent_given = false
+        local consent_expiry = nil
+
+        for i = 1, #consent_data, 2 do
+            if consent_data[i] == "given" then
+                consent_given = consent_data[i+1] == "true"
+            elseif consent_data[i] == "expiry" then
+                consent_expiry = tonumber(consent_data[i+1])
+            end
+        end
+
+        if not consent_given then
+            return false, "Consent not given"
+        end
+
+        if consent_expiry and consent_expiry < redis.call('TIME')[1] then
+            return false, "Consent expired"
+        end
+
+        return true, "Consent valid"
+    end
+
+    local data_key = KEYS[1]
+    local operation_type = ARGV[1]
+    local data_value = ARGV[2]
+
+    local consent_valid, consent_message = validate_community_consent(data_key, operation_type)
+
+    if not consent_valid then
+        return {0, consent_message}
+    end
+
+    -- Proceed with operation if consent is valid
+    if operation_type == "SET" then
+        redis.call('SET', data_key, data_value)
+        -- Log operation for transparency
+        redis.call('LPUSH', 'operations:log',
+                   string.format('%d:%s:%s:SUCCESS', redis.call('TIME')[1], operation_type, data_key))
+        return {1, "Operation completed with valid consent"}
+    elseif operation_type == "GET" then
+        local value = redis.call('GET', data_key)
+        redis.call('LPUSH', 'operations:log',
+                   string.format('%d:%s:%s:SUCCESS', redis.call('TIME')[1], operation_type, data_key))
+        return {1, value or ""}
+    end
+
+    return {0, "Unknown operation type"}
+
+  # Creator sovereignty caching configuration
+  creator-sovereignty.lua: |
+    -- Creator Sovereignty Revenue Caching Script
+    -- Ensures 75% minimum revenue share is always preserved
+
+    local function validate_revenue_share(creator_id, total_revenue, creator_share)
+        local minimum_share = total_revenue * 0.75
+
+        if creator_share < minimum_share then
+            return false, string.format("Creator share %.2f below required minimum %.2f",
+                                       creator_share, minimum_share)
+        end
+
+        return true, "Revenue share compliant"
+    end
+
+    local creator_id = KEYS[1]
+    local revenue_data = cjson.decode(ARGV[1])
+
+    local total_revenue = tonumber(revenue_data.total)
+    local creator_share = tonumber(revenue_data.creator_share)
+    local platform_share = tonumber(revenue_data.platform_share)
+    local community_share = tonumber(revenue_data.community_share)
+
+    -- Validate creator sovereignty
+    local sovereignty_valid, sovereignty_message = validate_revenue_share(creator_id, total_revenue, creator_share)
+
+    if not sovereignty_valid then
+        return {0, sovereignty_message}
+    end
+
+    -- Cache revenue data with sovereignty validation
+    local revenue_key = "creator:revenue:" .. creator_id
+    local sovereignty_score = creator_share / total_revenue
+
+    redis.call('HSET', revenue_key,
+               "total_revenue", total_revenue,
+               "creator_share", creator_share,
+               "platform_share", platform_share,
+               "community_share", community_share,
+               "sovereignty_score", sovereignty_score,
+               "last_updated", redis.call('TIME')[1])
+
+    -- Set expiration (24 hours)
+    redis.call('EXPIRE', revenue_key, 86400)
+
+    -- Update creator sovereignty metrics
+    redis.call('ZADD', 'creators:sovereignty:scores', sovereignty_score, creator_id)
+
+    -- Log for transparency
+    redis.call('LPUSH', 'sovereignty:log',
+               string.format('%d:REVENUE_UPDATE:%s:%.4f',
+                           redis.call('TIME')[1], creator_id, sovereignty_score))
+
+    return {1, string.format("Revenue cached with sovereignty score %.4f", sovereignty_score)}
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-community-cluster
+  namespace: blkout-staging
+  labels:
+    app: redis-cluster
+    component: community-data-sovereignty
+spec:
+  serviceName: redis-community-cluster
+  replicas: 6  # 3 masters + 3 replicas for high availability
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+        component: community-data-sovereignty
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.0-alpine
+        ports:
+        - containerPort: 6379
+          name: client
+        - containerPort: 16379
+          name: gossip
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: staging-liberation-secrets
+              key: REDIS_PASSWORD
+        command:
+        - redis-server
+        - /etc/redis/redis.conf
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis
+        - name: redis-data
+          mountPath: /data
+        - name: redis-logs
+          mountPath: /var/log/redis
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: redis-config
+        configMap:
+          name: redis-community-sovereignty-config
+      - name: redis-logs
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: fast-ssd
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-community-cluster
+  namespace: blkout-staging
+  labels:
+    app: redis-cluster
+    component: community-data-sovereignty
+spec:
+  clusterIP: None
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  - port: 16379
+    targetPort: 16379
+    name: gossip
+  selector:
+    app: redis-cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-community-cluster-headless
+  namespace: blkout-staging
+  labels:
+    app: redis-cluster
+    component: community-data-sovereignty
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: client
+  selector:
+    app: redis-cluster
+
+---
+# Redis community sovereignty monitoring
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-sovereignty-monitoring
+  namespace: blkout-staging
+data:
+  monitor-sovereignty.sh: |
+    #!/bin/bash
+    # Redis Community Data Sovereignty Monitoring Script
+
+    REDIS_HOST="redis-community-cluster"
+    REDIS_PORT="6379"
+    REDIS_PASSWORD="${REDIS_PASSWORD}"
+
+    echo "Starting Redis Community Sovereignty Monitoring..."
+
+    while true; do
+        # Check creator sovereignty scores
+        SOVEREIGNTY_SCORES=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD --no-auth-warning \
+                            ZRANGE creators:sovereignty:scores 0 -1 WITHSCORES)
+
+        echo "$(date): Creator Sovereignty Scores: $SOVEREIGNTY_SCORES"
+
+        # Check consent tracking status
+        CONSENT_OPERATIONS=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD --no-auth-warning \
+                            LLEN operations:log)
+
+        echo "$(date): Consent-tracked operations: $CONSENT_OPERATIONS"
+
+        # Check cluster health
+        CLUSTER_INFO=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD --no-auth-warning \
+                      CLUSTER INFO | grep cluster_state)
+
+        echo "$(date): Cluster status: $CLUSTER_INFO"
+
+        # Community data sovereignty metrics
+        TOTAL_KEYS=$(redis-cli -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD --no-auth-warning \
+                     DBSIZE)
+
+        echo "$(date): Total community data keys: $TOTAL_KEYS"
+
+        # Log to monitoring system
+        curl -X POST "http://prometheus-pushgateway:9091/metrics/job/redis-sovereignty" \
+             -d "redis_community_sovereignty_score{instance=\"$REDIS_HOST\"} $SOVEREIGNTY_SCORES"
+
+        sleep 60
+    done
