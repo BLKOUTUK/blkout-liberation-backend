@@ -19,6 +19,8 @@ const { EventEmitter } = require('events');
  * Uses dependency injection for clean layer separation
  */
 
+const economicJusticeService = require('./EconomicJusticeService');
+
 class NewsroomLiberationService {
   constructor() {
     // Liberation values configuration for newsroom
@@ -39,20 +41,7 @@ class NewsroomLiberationService {
       transparencyCalculationMs: 30    // <30ms transparency calculation
     };
 
-    // PURE DEPENDENCY INJECTION: No direct instantiation
-    // Dependencies will be injected via setEconomicJusticeService()
-    this.economicJusticeService = null;
-
-    console.log('📰 Newsroom Liberation Service initialized (Business Logic Only - Pure DI)');
-  }
-
-  /**
-   * PURE DEPENDENCY INJECTION: Set EconomicJusticeService dependency
-   * @param {EconomicJusticeService} economicJusticeService - Injected service instance
-   */
-  setEconomicJusticeService(economicJusticeService) {
-    this.economicJusticeService = economicJusticeService;
-    console.log('💉 EconomicJusticeService dependency injected successfully');
+    console.log('📰 Newsroom Liberation Service initialized (Business Logic Only)');
   }
 
   /**
@@ -95,10 +84,7 @@ class NewsroomLiberationService {
       const authenticityValidation = this.validateCulturalAuthenticity(contentData);
 
       // 6. REVENUE TRANSPARENCY: Calculate transparent revenue sharing (BUSINESS LOGIC)
-      if (!this.economicJusticeService) {
-        throw new Error('EconomicJusticeService dependency not injected');
-      }
-      const revenueTransparency = this.economicJusticeService.calculateRevenueTransparency(contentData);
+      const revenueTransparency = economicJusticeService.calculateRevenueTransparency(contentData);
 
       // 7. FINALIZE CONTENT CREATION (BUSINESS LOGIC ONLY - NO STORAGE)
       const finalContent = {
@@ -219,13 +205,10 @@ class NewsroomLiberationService {
       }
 
       // 1. USE ECONOMIC JUSTICE SERVICE for calculations (BUSINESS LOGIC)
-      if (!this.economicJusticeService) {
-        throw new Error('EconomicJusticeService dependency not injected');
-      }
-      const transparencyMetrics = this.economicJusticeService.calculateRevenueTransparency(revenueData);
+      const transparencyMetrics = economicJusticeService.calculateRevenueTransparency(revenueData);
 
       // 2. VALIDATE 75% CREATOR SOVEREIGNTY (BUSINESS LOGIC)
-      const sovereigntyValidation = this.economicJusticeService.validateCreatorSovereignty(transparencyMetrics);
+      const sovereigntyValidation = economicJusticeService.validateCreatorSovereignty(transparencyMetrics);
       if (!sovereigntyValidation) {
         throw new Error('Revenue sovereignty requirements not met');
       }
@@ -520,5 +503,4 @@ class NewsroomLiberationService {
   }
 }
 
-// Export the class for deployment compatibility
-module.exports = NewsroomLiberationService;
+module.exports = new NewsroomLiberationService();

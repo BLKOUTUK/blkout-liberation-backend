@@ -129,5 +129,5 @@ class EconomicJusticeService {
   }
 }
 
-// Export class for consistent instantiation pattern across deployment
-module.exports = EconomicJusticeService;
+// Export singleton instance for use in other services
+module.exports = new EconomicJusticeService();

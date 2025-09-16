@@ -18,9 +18,9 @@ const cors = require('cors');
 
 // Liberation Business Logic Services
 const LiberationBusinessLogicOrchestrator = require('./layer-3-business-logic/LiberationBusinessLogicOrchestrator');
-
-// Pure Dependency Injection System
-const { bootstrapServices, createAPILayerServices } = require('./dependency-injection/ServiceRegistry');
+const IvorAILiberationService = require('./layer-3-business-logic/IvorAILiberationService');
+const EventsLiberationService = require('./layer-3-business-logic/EventsLiberationService');
+const NewsroomLiberationService = require('./layer-3-business-logic/NewsroomLiberationService');
 
 class Phase3DeploymentOrchestrator {
   constructor(options = {}) {
@@ -191,21 +191,32 @@ class Phase3DeploymentOrchestrator {
   async initializeLiberationServices() {
     console.log('   🧠 Initializing Liberation Business Logic Architecture...');
 
-    // Bootstrap dependency injection system
-    bootstrapServices();
+    // Initialize individual liberation services
+    this.services.ivorAI = new IvorAILiberationService({
+      liberationConfig: {
+        creatorSovereigntyMinimum: 0.75,
+        responseTimeTarget: 500,
+        errorRateThreshold: 0.01
+      }
+    });
 
-    // Get properly dependency-injected services
-    const injectedServices = createAPILayerServices();
-    console.log('   📋 Available injected services:', Object.keys(injectedServices));
+    this.services.events = new EventsLiberationService({
+      liberationConfig: {
+        creatorSovereigntyMinimum: 0.75,
+        queryTimeTarget: 100,
+        democraticGovernance: true
+      }
+    });
 
-    // Use dependency-injected services instead of direct instantiation
-    this.services.ivorAI = injectedServices.ivorAI;
-    this.services.events = injectedServices.events;
-    this.services.newsroom = injectedServices.newsroom;
-    this.services.dataSovereignty = injectedServices.dataSovereignty;
-    this.services.economicJustice = injectedServices.economicJustice;
+    this.services.newsroom = new NewsroomLiberationService({
+      liberationConfig: {
+        creatorSovereigntyMinimum: 0.75,
+        contentServingTarget: 100,
+        antiExtractionEnabled: true
+      }
+    });
 
-    console.log('   ✅ Liberation services initialized with dependency injection');
+    console.log('   ✅ Liberation services initialized');
     this.deploymentMetrics.liberationValidationsPassed++;
   }
 
@@ -322,18 +333,11 @@ class Phase3DeploymentOrchestrator {
   async deployLiberationOrchestrator() {
     console.log('   🏛️ Deploying Liberation Business Logic Orchestrator...');
 
-    // Bootstrap dependency injection system
-    bootstrapServices();
-
-    // Get properly injected services
-    const services = createAPILayerServices();
-    console.log('📋 Available services for orchestrator:', Object.keys(services));
-
-    // Initialize orchestrator with dependency-injected services
+    // Initialize orchestrator with all services
     this.liberationOrchestrator = new LiberationBusinessLogicOrchestrator({
-      ivorAI: services.ivorAI,
-      events: services.events,
-      newsroom: services.newsroom
+      ivorAI: {},
+      events: {},
+      newsroom: {}
     });
 
     // Test mathematical enforcement

@@ -6,16 +6,11 @@
 
 console.log('🧪 TESTING LAYER SEPARATION AND DEPLOYMENT COMPATIBILITY\n');
 
-// Import services to test PURE dependency injection layer separation
-const { bootstrapServices, createAPILayerServices } = require('./dependency-injection/ServiceRegistry');
+// Import services to test layer separation
+const economicJusticeService = require('./layer-3-business-logic/EconomicJusticeService');
+const newsroomLiberationService = require('./layer-3-business-logic/NewsroomLiberationService');
+const dataSovereigntyService = require('./layer-5-data-sovereignty/DataSovereigntyService');
 const apiGateway = require('./layer-2-api-gateway/api-gateway');
-
-// Bootstrap services and create instances through PURE dependency injection
-bootstrapServices();
-const services = createAPILayerServices();
-const economicJusticeService = services.economicJustice;
-const newsroomLiberationService = services.newsroom;
-const dataSovereigntyService = services.dataSovereignty;
 
 /**
  * TEST 1: Layer 3 Business Logic Independence

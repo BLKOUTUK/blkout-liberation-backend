@@ -13,9 +13,9 @@
  */
 
 const { EventEmitter } = require('events');
-
-// Liberation Business Logic Orchestrator uses dependency injection
-// Services are passed in constructor options, no direct imports needed
+const IvorAILiberationService = require('./IvorAILiberationService');
+const EventsLiberationService = require('./EventsLiberationService');
+const NewsroomLiberationService = require('./NewsroomLiberationService');
 
 class LiberationBusinessLogicOrchestrator extends EventEmitter {
   constructor(options = {}) {
@@ -97,15 +97,12 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
       }
     };
 
-    // Use dependency-injected services passed from constructor
+    // Initialize liberation services
     this.services = {
-      ivorAI: options.ivorAI,
-      events: options.events,
-      newsroom: options.newsroom
+      ivorAI: new IvorAILiberationService(options.ivorAI),
+      events: new EventsLiberationService(options.events),
+      newsroom: new NewsroomLiberationService(options.newsroom)
     };
-
-    console.log('🏴‍☠️ Liberation Business Logic Orchestrator initialized with dependency injection');
-    console.log('📋 Services received:', Object.keys(this.services));
 
     // Liberation metrics tracking
     this.liberationMetrics = {
@@ -464,56 +461,6 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
     };
   }
 
-  /**
-   * HANDLE SOVEREIGNTY ENFORCEMENT FAILURE: Manage failures in creator sovereignty enforcement
-   */
-  async handleSovereigntyEnforcementFailure(enforcement, error) {
-    console.error('🚨 Creator sovereignty enforcement failure:', error.message);
-
-    // 1. LOG FAILURE DETAILS
-    const failureDetails = {
-      operationId: enforcement.operationId,
-      serviceType: enforcement.serviceType,
-      creatorId: enforcement.creatorId,
-      expectedShare: enforcement.expectedShare,
-      actualShare: enforcement.actualShare,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      failureType: 'sovereignty_enforcement'
-    };
-
-    // 2. UPDATE LIBERATION METRICS
-    this.liberationMetrics.enforcementFailures = (this.liberationMetrics.enforcementFailures || 0) + 1;
-    this.liberationMetrics.lastFailure = failureDetails;
-
-    // 3. TRIGGER EMERGENCY RESPONSE if critical
-    if (enforcement.criticalFailure || enforcement.expectedShare < 0.75) {
-      console.error('🚨 CRITICAL SOVEREIGNTY VIOLATION - Triggering emergency response');
-      await this.triggerSovereigntyRollback(enforcement, {
-        violation: 'creator_sovereignty_enforcement_failure',
-        details: failureDetails
-      });
-    }
-
-    // 4. EMIT FAILURE EVENT for monitoring systems
-    this.emit('sovereignty_enforcement_failed', {
-      enforcement,
-      error: failureDetails,
-      requiresAttention: enforcement.expectedShare < 0.75
-    });
-
-    // 5. COMMUNITY NOTIFICATION for transparency
-    await this.notifyCommunityOfEmergencyRollback('sovereignty_enforcement_failure', {
-      operationId: enforcement.operationId,
-      serviceType: enforcement.serviceType,
-      creatorId: enforcement.creatorId,
-      error: error.message,
-      actionTaken: 'enforcement_failure_logged'
-    });
-
-    console.log(`📊 Sovereignty enforcement failure handled for operation ${enforcement.operationId}`);
-  }
-
   // ===== ROLLBACK TRIGGER METHODS =====
 
   async triggerSovereigntyRollback(enforcement, validation) {
@@ -553,22 +500,17 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
   setupServiceCoordination() {
     // Listen for service events and coordinate responses
     Object.values(this.services).forEach(service => {
-      // Check if service is an EventEmitter before trying to attach listeners
-      if (service && typeof service.on === 'function') {
-        service.on('liberation_response_generated', (data) => {
-          this.emit('cross_service_liberation_event', { service: 'ivorAI', data });
-        });
+      service.on('liberation_response_generated', (data) => {
+        this.emit('cross_service_liberation_event', { service: 'ivorAI', data });
+      });
 
-        service.on('event_created', (data) => {
-          this.emit('cross_service_liberation_event', { service: 'events', data });
-        });
+      service.on('event_created', (data) => {
+        this.emit('cross_service_liberation_event', { service: 'events', data });
+      });
 
-        service.on('liberation_content_created', (data) => {
-          this.emit('cross_service_liberation_event', { service: 'newsroom', data });
-        });
-      } else {
-        console.log(`⚠️ Service ${service.constructor?.name || 'unknown'} does not support event listeners`);
-      }
+      service.on('liberation_content_created', (data) => {
+        this.emit('cross_service_liberation_event', { service: 'newsroom', data });
+      });
     });
   }
 
