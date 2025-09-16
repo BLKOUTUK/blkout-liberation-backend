@@ -464,6 +464,56 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
     };
   }
 
+  /**
+   * HANDLE SOVEREIGNTY ENFORCEMENT FAILURE: Manage failures in creator sovereignty enforcement
+   */
+  async handleSovereigntyEnforcementFailure(enforcement, error) {
+    console.error('🚨 Creator sovereignty enforcement failure:', error.message);
+
+    // 1. LOG FAILURE DETAILS
+    const failureDetails = {
+      operationId: enforcement.operationId,
+      serviceType: enforcement.serviceType,
+      creatorId: enforcement.creatorId,
+      expectedShare: enforcement.expectedShare,
+      actualShare: enforcement.actualShare,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      failureType: 'sovereignty_enforcement'
+    };
+
+    // 2. UPDATE LIBERATION METRICS
+    this.liberationMetrics.enforcementFailures = (this.liberationMetrics.enforcementFailures || 0) + 1;
+    this.liberationMetrics.lastFailure = failureDetails;
+
+    // 3. TRIGGER EMERGENCY RESPONSE if critical
+    if (enforcement.criticalFailure || enforcement.expectedShare < 0.75) {
+      console.error('🚨 CRITICAL SOVEREIGNTY VIOLATION - Triggering emergency response');
+      await this.triggerSovereigntyRollback(enforcement, {
+        violation: 'creator_sovereignty_enforcement_failure',
+        details: failureDetails
+      });
+    }
+
+    // 4. EMIT FAILURE EVENT for monitoring systems
+    this.emit('sovereignty_enforcement_failed', {
+      enforcement,
+      error: failureDetails,
+      requiresAttention: enforcement.expectedShare < 0.75
+    });
+
+    // 5. COMMUNITY NOTIFICATION for transparency
+    await this.notifyCommunityOfEmergencyRollback('sovereignty_enforcement_failure', {
+      operationId: enforcement.operationId,
+      serviceType: enforcement.serviceType,
+      creatorId: enforcement.creatorId,
+      error: error.message,
+      actionTaken: 'enforcement_failure_logged'
+    });
+
+    console.log(`📊 Sovereignty enforcement failure handled for operation ${enforcement.operationId}`);
+  }
+
   // ===== ROLLBACK TRIGGER METHODS =====
 
   async triggerSovereigntyRollback(enforcement, validation) {
