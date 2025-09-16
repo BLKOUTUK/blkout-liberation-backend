@@ -637,6 +637,39 @@ class NewsroomLiberationService extends EventEmitter {
       `Improve ${key}: Current score ${(score * 100).toFixed(1)}% - Consider community feedback and cultural guidance`
     );
   }
+
+  /**
+   * GENERATE CONTENT ERROR RESPONSE: Liberation-focused error handling
+   */
+  generateContentErrorResponse(error, contentData) {
+    return {
+      success: false,
+      error: {
+        message: error.message || 'Content creation failed',
+        type: 'newsroom_liberation_error',
+        code: 'NEWSROOM_CONTENT_ERROR',
+        timestamp: new Date().toISOString(),
+        liberationValues: {
+          creatorSovereigntyMaintained: true,
+          communityProtectionActive: true,
+          culturalAuthenticityRespected: true,
+          antiExtractionEnforced: true
+        },
+        recovery: {
+          suggestion: 'Review content for liberation alignment and cultural authenticity',
+          supportContact: 'newsroom@blkout.liberation',
+          communityGuidance: 'Content must serve Black queer empowerment and community liberation',
+          culturalStewardship: 'Ensure respectful representation without appropriation'
+        }
+      },
+      contentData: {
+        id: contentData?.id || null,
+        status: 'failed',
+        retryable: true,
+        liberationGuidanceNeeded: true
+      }
+    };
+  }
 }
 
 module.exports = NewsroomLiberationService;
