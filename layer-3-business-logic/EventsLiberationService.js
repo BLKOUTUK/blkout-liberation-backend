@@ -543,6 +543,42 @@ class EventsLiberationService extends EventEmitter {
   }
 
   /**
+   * FINALIZE EVENT CREATION: Complete event setup with liberation values
+   */
+  async finalizeEventCreation(eventData, sovereigntyValidation, liberationValidation, protectionCheck, governanceResult) {
+    const eventId = `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const finalEvent = {
+      id: eventId,
+      ...eventData,
+      status: governanceResult.approved ? 'active' : 'pending_approval',
+      createdAt: new Date().toISOString(),
+      liberationValues: {
+        creatorSovereigntyScore: sovereigntyValidation.score || 0.75,
+        liberationScore: liberationValidation.liberationScore || 0.7,
+        communityProtectionLevel: protectionCheck.level || 'high',
+        democraticApproval: governanceResult.approved,
+        culturalAuthenticity: liberationValidation.culturalAuthenticity || true
+      },
+      governance: {
+        votingRequired: governanceResult.votingRequired,
+        approvalThreshold: governanceResult.threshold,
+        communityFeedback: governanceResult.feedback || []
+      },
+      metrics: {
+        createdAt: new Date().toISOString(),
+        approvalPath: governanceResult.approved ? 'automatic' : 'community_vote'
+      }
+    };
+
+    // Emit success event
+    this.metrics.approvedEvents++;
+    console.log(`🎪 Event finalized: ${eventId} (${finalEvent.status})`);
+
+    return finalEvent;
+  }
+
+  /**
    * GENERATE ERROR RESPONSE: Liberation-focused error handling
    */
   generateEventErrorResponse(error, eventData) {
