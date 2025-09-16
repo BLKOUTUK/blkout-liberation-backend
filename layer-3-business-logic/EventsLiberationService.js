@@ -541,6 +541,36 @@ class EventsLiberationService extends EventEmitter {
   calculateLiberationCompliantRate() {
     return 0.9; // Mock 90% liberation compliance rate
   }
+
+  /**
+   * GENERATE ERROR RESPONSE: Liberation-focused error handling
+   */
+  generateEventErrorResponse(error, eventData) {
+    return {
+      success: false,
+      error: {
+        message: error.message || 'Event creation failed',
+        type: 'liberation_service_error',
+        code: 'EVENTS_SERVICE_ERROR',
+        timestamp: new Date().toISOString(),
+        liberationValues: {
+          creatorSovereigntyMaintained: true,
+          communityProtectionActive: true,
+          democraticProcessRespected: true
+        },
+        recovery: {
+          suggestion: 'Review event data for liberation compliance',
+          supportContact: 'community@blkout.liberation',
+          communityGuidance: 'Events must serve community empowerment'
+        }
+      },
+      eventData: {
+        id: eventData?.id || null,
+        status: 'failed',
+        retryable: true
+      }
+    };
+  }
 }
 
 module.exports = EventsLiberationService;
