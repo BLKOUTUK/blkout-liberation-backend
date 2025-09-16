@@ -18,9 +18,9 @@ const cors = require('cors');
 
 // Liberation Business Logic Services
 const LiberationBusinessLogicOrchestrator = require('./layer-3-business-logic/LiberationBusinessLogicOrchestrator');
-const IvorAILiberationService = require('./layer-3-business-logic/IvorAILiberationService');
-const EventsLiberationService = require('./layer-3-business-logic/EventsLiberationService');
-const NewsroomLiberationService = require('./layer-3-business-logic/NewsroomLiberationService');
+
+// Pure Dependency Injection System
+const { bootstrapServices, createAPILayerServices } = require('./dependency-injection/ServiceRegistry');
 
 class Phase3DeploymentOrchestrator {
   constructor(options = {}) {
@@ -333,11 +333,18 @@ class Phase3DeploymentOrchestrator {
   async deployLiberationOrchestrator() {
     console.log('   🏛️ Deploying Liberation Business Logic Orchestrator...');
 
-    // Initialize orchestrator with all services
+    // Bootstrap dependency injection system
+    bootstrapServices();
+
+    // Get properly injected services
+    const services = createAPILayerServices();
+    console.log('📋 Available services for orchestrator:', Object.keys(services));
+
+    // Initialize orchestrator with dependency-injected services
     this.liberationOrchestrator = new LiberationBusinessLogicOrchestrator({
-      ivorAI: {},
-      events: {},
-      newsroom: {}
+      ivorAI: {}, // Still placeholder - IvorAILiberationService not yet in DI
+      events: services.events,
+      newsroom: services.newsroom
     });
 
     // Test mathematical enforcement

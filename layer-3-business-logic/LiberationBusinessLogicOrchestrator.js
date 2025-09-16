@@ -500,17 +500,22 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
   setupServiceCoordination() {
     // Listen for service events and coordinate responses
     Object.values(this.services).forEach(service => {
-      service.on('liberation_response_generated', (data) => {
-        this.emit('cross_service_liberation_event', { service: 'ivorAI', data });
-      });
+      // Check if service is an EventEmitter before trying to attach listeners
+      if (service && typeof service.on === 'function') {
+        service.on('liberation_response_generated', (data) => {
+          this.emit('cross_service_liberation_event', { service: 'ivorAI', data });
+        });
 
-      service.on('event_created', (data) => {
-        this.emit('cross_service_liberation_event', { service: 'events', data });
-      });
+        service.on('event_created', (data) => {
+          this.emit('cross_service_liberation_event', { service: 'events', data });
+        });
 
-      service.on('liberation_content_created', (data) => {
-        this.emit('cross_service_liberation_event', { service: 'newsroom', data });
-      });
+        service.on('liberation_content_created', (data) => {
+          this.emit('cross_service_liberation_event', { service: 'newsroom', data });
+        });
+      } else {
+        console.log(`⚠️ Service ${service.constructor?.name || 'unknown'} does not support event listeners`);
+      }
     });
   }
 
