@@ -45,42 +45,60 @@ function bootstrapAllServices() {
 
   try {
     // LAYER 5: Data Sovereignty (No dependencies)
-    container.register('dataSovereigntyService', DataSovereigntyService, []);
+    container.register('dataSovereigntyService', DataSovereigntyService, [], {
+      layer: 5
+    });
 
     // LAYER 3: Core Business Logic Services (No cross-dependencies initially)
-    container.register('economicJusticeService', EconomicJusticeService, []);
+    container.register('economicJusticeService', EconomicJusticeService, [], {
+      layer: 3
+    });
 
     // LAYER 3: Services with Economic Justice Dependency
-    container.register('newsroomLiberationService', NewsroomLiberationService, ['economicJusticeService']);
-    container.register('eventsLiberationService', EventsLiberationService, ['economicJusticeService']);
-    container.register('ivorAILiberationService', IvorAILiberationService, ['economicJusticeService']);
+    container.register('newsroomLiberationService', NewsroomLiberationService, ['economicJusticeService'], {
+      layer: 3
+    });
+    container.register('eventsLiberationService', EventsLiberationService, ['economicJusticeService'], {
+      layer: 3
+    });
+    container.register('ivorAILiberationService', IvorAILiberationService, ['economicJusticeService'], {
+      layer: 3
+    });
 
-    // LAYER 3: Contract Implementation Services (Phase 4: With Interface Enforcement)
+    // LAYER 3: Contract Implementation Services (Phase 4 + 5: Contract + Layer Enforcement)
     container.register('creatorSovereigntyService', CreatorSovereigntyServiceImpl, [], {
-      interface: ICreatorSovereigntyService
+      interface: ICreatorSovereigntyService,
+      layer: 3
     });
     container.register('democraticGovernanceService', DemocraticGovernanceServiceImpl, [], {
-      interface: IDemocraticGovernanceService
+      interface: IDemocraticGovernanceService,
+      layer: 3
     });
     container.register('communityProtectionService', CommunityProtectionServiceImpl, [], {
-      interface: ICommunityProtectionService
+      interface: ICommunityProtectionService,
+      layer: 3
     });
     container.register('revenueTransparencyService', RevenueTransparencyServiceImpl, ['economicJusticeService'], {
-      interface: IRevenueTransparencyService
+      interface: IRevenueTransparencyService,
+      layer: 3
     });
     container.register('featureFlagService', FeatureFlagServiceImpl, [], {
-      interface: IFeatureFlagService
+      interface: IFeatureFlagService,
+      layer: 3
     });
     container.register('liberationMetricsService', LiberationMetricsServiceImpl, [], {
-      interface: ILiberationMetricsService
+      interface: ILiberationMetricsService,
+      layer: 3
     });
 
-    // LAYER 3: Orchestrator (With dependency injection)
+    // LAYER 3: Orchestrator (With dependency injection and layer enforcement)
     container.register('liberationOrchestrator', LiberationBusinessLogicOrchestrator, [
       'newsroomLiberationService',
       'eventsLiberationService',
       'ivorAILiberationService'
-    ]);
+    ], {
+      layer: 3
+    });
 
     // Initialize all services in dependency order
     container.initializeServices();

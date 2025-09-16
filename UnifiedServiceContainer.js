@@ -2,11 +2,13 @@
  * Unified Service Container
  * Combines interface contracts with service management for complete DI
  * PHASE 4: Enhanced with runtime interface contract enforcement
+ * PHASE 5: Enhanced with layer separation enforcement
  *
  * PHILOSOPHY: Centralized dependency management following target architecture
  * - Singleton pattern for service instances (per documentation)
  * - Automatic dependency resolution
  * - Interface contract compliance with runtime enforcement
+ * - Layer boundary enforcement and clean architecture
  * - Liberation values enforcement
  */
 
@@ -23,16 +25,26 @@ class UnifiedServiceContainer {
     this.contractViolations = [];       // Track contract violations
     this.contractValidations = [];      // Track successful validations
 
-    console.log('🏗️ Unified Service Container initialized for complete DI with contract enforcement');
+    // PHASE 5: Layer separation enforcement
+    this.layerEnforcement = true;       // Enable strict layer boundary enforcement
+    this.layerViolations = [];          // Track layer boundary violations
+    this.layerValidations = [];         // Track valid layer accesses
+    this.layerDefinitions = new Map();  // Layer access control definitions
+
+    // Define clean architecture layers
+    this.defineArchitectureLayers();
+
+    console.log('🏗️ Unified Service Container initialized for complete DI with contract and layer enforcement');
   }
 
   /**
    * Register a service with its dependencies and interface
    * PHASE 4: Enhanced with contract validation
+   * PHASE 5: Enhanced with layer boundary validation
    * @param {string} name - Service name
    * @param {Function} serviceClass - Service class constructor
    * @param {Array} dependencies - Array of dependency service names
-   * @param {Object} options - Registration options (interface, contractEnforcement)
+   * @param {Object} options - Registration options (interface, layer, contractEnforcement)
    */
   register(name, serviceClass, dependencies = [], options = {}) {
     if (!name || !serviceClass) {
@@ -44,6 +56,11 @@ class UnifiedServiceContainer {
       this.validateServiceContract(name, serviceClass, options.interface);
     }
 
+    // PHASE 5: Validate layer boundaries if layer specified
+    if (options.layer && this.layerEnforcement) {
+      this.validateLayerBoundaries(name, dependencies, options.layer);
+    }
+
     this.services.set(name, serviceClass);
     this.dependencies.set(name, dependencies);
 
@@ -52,7 +69,16 @@ class UnifiedServiceContainer {
       this.interfaces.set(name, options.interface);
     }
 
-    console.log(`📝 Registered service: ${name} with ${dependencies.length} dependencies${options.interface ? ' (contract enforced)' : ''}`);
+    // Store layer information for boundary enforcement
+    if (options.layer) {
+      this.layerDefinitions.set(name, options.layer);
+    }
+
+    const features = [];
+    if (options.interface) features.push('contract enforced');
+    if (options.layer) features.push(`layer ${options.layer}`);
+
+    console.log(`📝 Registered service: ${name} with ${dependencies.length} dependencies${features.length > 0 ? ` (${features.join(', ')})` : ''}`);
   }
 
   /**
@@ -326,6 +352,143 @@ class UnifiedServiceContainer {
   setContractEnforcement(enabled) {
     this.contractEnforcement = enabled;
     console.log(`🔒 Contract enforcement ${enabled ? 'ENABLED' : 'DISABLED'}`);
+  }
+
+  // ===== PHASE 5: LAYER SEPARATION ENFORCEMENT METHODS =====
+
+  /**
+   * Define clean architecture layers and access control rules
+   */
+  defineArchitectureLayers() {
+    const layers = {
+      2: { name: 'API Gateway', canAccess: [3, 5] },
+      3: { name: 'Business Logic', canAccess: [3, 5] }, // Layer 3 can access other Layer 3 services and Layer 5
+      5: { name: 'Data Sovereignty', canAccess: [] }
+    };
+
+    this.layerAccessRules = layers;
+    console.log('🏛️ Clean architecture layers defined with access control');
+  }
+
+  /**
+   * Validate layer boundary compliance for service dependencies
+   * @param {string} serviceName - Name of the service being registered
+   * @param {Array} dependencies - Service dependencies to validate
+   * @param {number} serviceLayer - Layer level of the service (2, 3, or 5)
+   */
+  validateLayerBoundaries(serviceName, dependencies, serviceLayer) {
+    const allowedLayers = this.layerAccessRules[serviceLayer]?.canAccess || [];
+
+    dependencies.forEach(depName => {
+      const dependencyLayer = this.layerDefinitions.get(depName);
+
+      if (dependencyLayer !== undefined) {
+        const isValidAccess = allowedLayers.includes(dependencyLayer);
+
+        const access = {
+          serviceName,
+          serviceLayer,
+          dependencyName: depName,
+          dependencyLayer,
+          timestamp: new Date().toISOString()
+        };
+
+        if (isValidAccess) {
+          this.layerValidations.push(access);
+          console.log(`✅ Valid layer access: ${serviceName} (L${serviceLayer}) -> ${depName} (L${dependencyLayer})`);
+        } else {
+          const violation = {
+            ...access,
+            violationType: 'unauthorized_layer_access',
+            message: `Service '${serviceName}' (Layer ${serviceLayer}) cannot access '${depName}' (Layer ${dependencyLayer})`,
+            severity: 'error'
+          };
+
+          this.layerViolations.push(violation);
+
+          if (this.layerEnforcement) {
+            throw new Error(`LAYER VIOLATION: ${violation.message}`);
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Validate that business logic services use repository pattern
+   * @param {string} serviceName - Service name
+   * @param {Function} serviceClass - Service class
+   */
+  validateRepositoryPattern(serviceName, serviceClass) {
+    // Check if service constructor expects repository dependencies
+    const constructorStr = serviceClass.toString();
+    const hasRepositoryParams = constructorStr.includes('Repository') ||
+                               constructorStr.includes('DataAccess') ||
+                               constructorStr.includes('Storage');
+
+    if (!hasRepositoryParams) {
+      const violation = {
+        serviceName,
+        violationType: 'repository_pattern_violation',
+        message: `Business logic service '${serviceName}' should use repository pattern for data access`,
+        severity: 'warning',
+        timestamp: new Date().toISOString()
+      };
+
+      this.layerViolations.push(violation);
+
+      if (this.layerEnforcement) {
+        console.warn(`⚠️ Repository pattern warning: ${violation.message}`);
+      }
+    }
+  }
+
+  /**
+   * Get layer separation report
+   * @returns {Object} - Layer violation and validation summary
+   */
+  getLayerReport() {
+    return {
+      enforcementEnabled: this.layerEnforcement,
+      totalViolations: this.layerViolations.length,
+      totalValidations: this.layerValidations.length,
+      violations: this.layerViolations,
+      validations: this.layerValidations,
+      layerAccessRules: this.layerAccessRules,
+      complianceRate: this.layerValidations.length / (this.layerValidations.length + this.layerViolations.length) || 1,
+      generatedAt: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Get comprehensive compliance report (contracts + layers)
+   * @returns {Object} - Complete compliance summary
+   */
+  getComplianceReport() {
+    const contractReport = this.getContractReport();
+    const layerReport = this.getLayerReport();
+
+    return {
+      contractCompliance: contractReport,
+      layerCompliance: layerReport,
+      overallCompliance: {
+        contractRate: contractReport.complianceRate,
+        layerRate: layerReport.complianceRate,
+        combinedRate: (contractReport.complianceRate + layerReport.complianceRate) / 2,
+        allViolations: [...contractReport.violations, ...layerReport.violations],
+        totalValidations: contractReport.totalValidations + layerReport.totalValidations
+      },
+      generatedAt: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Enable or disable layer enforcement
+   * @param {boolean} enabled - Whether to enforce layer boundaries
+   */
+  setLayerEnforcement(enabled) {
+    this.layerEnforcement = enabled;
+    console.log(`🏛️ Layer enforcement ${enabled ? 'ENABLED' : 'DISABLED'}`);
   }
 }
 
