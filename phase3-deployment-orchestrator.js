@@ -191,32 +191,21 @@ class Phase3DeploymentOrchestrator {
   async initializeLiberationServices() {
     console.log('   🧠 Initializing Liberation Business Logic Architecture...');
 
-    // Initialize individual liberation services
-    this.services.ivorAI = new IvorAILiberationService({
-      liberationConfig: {
-        creatorSovereigntyMinimum: 0.75,
-        responseTimeTarget: 500,
-        errorRateThreshold: 0.01
-      }
-    });
+    // Bootstrap dependency injection system
+    bootstrapServices();
 
-    this.services.events = new EventsLiberationService({
-      liberationConfig: {
-        creatorSovereigntyMinimum: 0.75,
-        queryTimeTarget: 100,
-        democraticGovernance: true
-      }
-    });
+    // Get properly dependency-injected services
+    const injectedServices = createAPILayerServices();
+    console.log('   📋 Available injected services:', Object.keys(injectedServices));
 
-    this.services.newsroom = new NewsroomLiberationService({
-      liberationConfig: {
-        creatorSovereigntyMinimum: 0.75,
-        contentServingTarget: 100,
-        antiExtractionEnabled: true
-      }
-    });
+    // Use dependency-injected services instead of direct instantiation
+    this.services.ivorAI = injectedServices.ivorAI;
+    this.services.events = injectedServices.events;
+    this.services.newsroom = injectedServices.newsroom;
+    this.services.dataSovereignty = injectedServices.dataSovereignty;
+    this.services.economicJustice = injectedServices.economicJustice;
 
-    console.log('   ✅ Liberation services initialized');
+    console.log('   ✅ Liberation services initialized with dependency injection');
     this.deploymentMetrics.liberationValidationsPassed++;
   }
 
