@@ -541,6 +541,104 @@ class EventsLiberationService extends EventEmitter {
   calculateLiberationCompliantRate() {
     return 0.9; // Mock 90% liberation compliance rate
   }
+
+  /**
+   * FINALIZE EVENT CREATION: Complete event creation with all validations
+   */
+  async finalizeEventCreation(eventData, sovereigntyValidation, liberationValidation, protectionCheck, governanceResult) {
+    console.log('   🎪 Finalizing event creation with liberation protocols...');
+
+    // Create the final event with all liberation metrics
+    const finalEvent = {
+      id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      title: eventData.title,
+      description: eventData.description,
+      location: eventData.location,
+      dateTime: eventData.dateTime,
+      organizer: eventData.organizer,
+
+      // Liberation validation results
+      liberationMetrics: {
+        sovereigntyCompliant: sovereigntyValidation.compliant,
+        creatorShare: sovereigntyValidation.creatorShare,
+        liberationScore: liberationValidation.liberationScore,
+        liberationCompliant: liberationValidation.liberationCompliant,
+        communityProtected: protectionCheck.safe,
+        democraticApproval: governanceResult.approved
+      },
+
+      // Community governance
+      governance: {
+        democraticVotes: governanceResult.votes || 0,
+        communityApproval: governanceResult.approvalRate || 1.0,
+        governanceMethod: governanceResult.method || 'direct_approval'
+      },
+
+      // Creator sovereignty enforcement
+      revenue: {
+        creatorShare: sovereigntyValidation.creatorShare,
+        minimumRequired: this.liberationConfig.creatorSovereigntyMinimum,
+        revenueTransparency: true
+      },
+
+      // Timestamps
+      createdAt: new Date().toISOString(),
+      liberationValidatedAt: new Date().toISOString(),
+
+      // Status
+      status: 'approved',
+      phase: 'liberation_validated'
+    };
+
+    console.log(`   ✅ Event finalized: ${finalEvent.id} (Liberation Score: ${liberationValidation.liberationScore})`);
+    return finalEvent;
+  }
+
+  /**
+   * GENERATE EVENT ERROR RESPONSE: Handle event creation failures with liberation context
+   */
+  generateEventErrorResponse(error, eventData) {
+    console.log('   🚨 Generating liberation-aware error response...');
+
+    const errorResponse = {
+      success: false,
+      error: {
+        message: error.message,
+        type: error.name || 'EventCreationError',
+        timestamp: new Date().toISOString()
+      },
+
+      // Liberation context for error
+      liberationContext: {
+        eventTitle: eventData?.title || 'Unknown Event',
+        organizer: eventData?.organizer || 'Unknown Organizer',
+        liberationValidationAttempted: true,
+        communityProtectionActive: true
+      },
+
+      // Recovery suggestions
+      recovery: {
+        suggestions: [
+          'Ensure event data includes all required liberation metrics',
+          'Verify creator sovereignty requirements are met (75% minimum)',
+          'Check community protection guidelines compliance',
+          'Validate democratic governance requirements'
+        ],
+        supportContact: 'liberation-support@blkout.community'
+      },
+
+      // Debug info for development
+      debug: {
+        errorStack: error.stack,
+        eventData: eventData,
+        timestamp: Date.now(),
+        serviceName: 'EventsLiberationService'
+      }
+    };
+
+    console.log(`   📝 Error response generated for: ${errorResponse.liberationContext.eventTitle}`);
+    return errorResponse;
+  }
 }
 
 module.exports = EventsLiberationService;
