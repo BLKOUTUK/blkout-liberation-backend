@@ -330,6 +330,106 @@ class EventsLiberationService extends EventEmitter {
     return healthMetrics;
   }
 
+  /**
+   * FINALIZE EVENT CREATION: Complete event creation process with all validations
+   */
+  async finalizeEventCreation(eventData, sovereigntyValidation, liberationValidation, protectionCheck, governanceResult) {
+    try {
+      // 1. GENERATE UNIQUE EVENT ID
+      const eventId = this.generateEventId();
+
+      // 2. CREATE FINALIZED EVENT OBJECT
+      const finalEvent = {
+        id: eventId,
+        title: eventData.title,
+        description: eventData.description,
+        creatorId: eventData.creatorId,
+        datetime: eventData.datetime,
+        location: eventData.location,
+        type: eventData.type,
+
+        // Liberation values preserved
+        liberationValues: {
+          liberationScore: liberationValidation.liberationScore,
+          creatorSovereignty: sovereigntyValidation.actualShare,
+          democraticApproval: governanceResult.approved,
+          communityProtected: protectionCheck.safe,
+          culturalAuthenticity: true,
+          economicJustice: sovereigntyValidation.compliant
+        },
+
+        // Governance metadata
+        governance: {
+          democraticProcess: governanceResult.method,
+          approvalScore: governanceResult.approvalScore,
+          communityVoteRequired: governanceResult.method === 'community_vote',
+          votingPeriod: governanceResult.votingPeriod || null
+        },
+
+        // Revenue sovereignty
+        revenueSharing: {
+          creatorShare: sovereigntyValidation.actualShare,
+          minimumRequired: sovereigntyValidation.minimumRequired,
+          compliant: sovereigntyValidation.compliant
+        },
+
+        // Protection status
+        protectionStatus: {
+          safe: protectionCheck.safe,
+          violations: protectionCheck.violations || [],
+          recommendations: protectionCheck.recommendations || []
+        },
+
+        // Timestamps
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: governanceResult.approved ? 'approved' : 'pending_approval'
+      };
+
+      // 3. BUSINESS LOGIC PROCESSING TIME TRACKING
+      const processingTime = Date.now() - (this.startTime || Date.now());
+
+      // 4. PERFORMANCE VALIDATION
+      if (processingTime > this.performanceTargets.eventValidationTime) {
+        console.warn(`⚠️ Event finalization exceeded target: ${processingTime}ms > ${this.performanceTargets.eventValidationTime}ms`);
+      }
+
+      // 5. UPDATE METRICS
+      if (governanceResult.approved) {
+        this.metrics.approvedEvents++;
+      }
+
+      console.log(`🎪 Event finalized: ${finalEvent.id} (${finalEvent.status})`);
+      console.log(`   Liberation Score: ${(liberationValidation.liberationScore * 100).toFixed(1)}%`);
+      console.log(`   Creator Share: ${(sovereigntyValidation.actualShare * 100).toFixed(1)}%`);
+      console.log(`   Democratic Approval: ${governanceResult.approved}`);
+
+      return {
+        success: true,
+        event: finalEvent,
+        businessLogicResult: {
+          processingTime,
+          liberationScore: liberationValidation.liberationScore,
+          performanceTarget: this.performanceTargets.eventValidationTime,
+          performanceMet: processingTime <= this.performanceTargets.eventValidationTime
+        }
+      };
+
+    } catch (error) {
+      console.error('🚨 Event finalization error:', error);
+      throw new Error(`Event finalization failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * GENERATE EVENT ID: Create unique event identifier
+   */
+  generateEventId() {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 10);
+    return `event-${timestamp}-${random}`;
+  }
+
   // ===== HELPER METHODS =====
 
   async validateCreatorSovereignty(eventData, creatorId) {
@@ -523,6 +623,171 @@ class EventsLiberationService extends EventEmitter {
       approvalScore: 0.7,
       democraticProcess: 'completed',
       votingPeriod: this.democraticGovernance.votingPeriodHours
+    };
+  }
+
+  /**
+   * INITIATE EVENT LIBERATION GUIDANCE: Guide event creators toward liberation alignment
+   */
+  initiateEventLiberationGuidance(eventData, liberationValidation) {
+    return {
+      guidance: true,
+      liberationScore: liberationValidation.liberationScore,
+      recommendations: liberationValidation.recommendations,
+      improvementAreas: Object.entries(liberationValidation.individualScores)
+        .filter(([key, score]) => score < 0.7)
+        .map(([key, score]) => ({
+          area: key,
+          currentScore: score,
+          targetScore: 0.7,
+          improvement: `Enhance ${key} to better serve Black queer liberation`
+        })),
+      message: 'Your event has potential for liberation impact. Consider these improvements to better serve our community.'
+    };
+  }
+
+  /**
+   * REJECT EVENT FOR PROTECTION: Reject events that violate community protection
+   */
+  rejectEventForProtection(protectionCheck) {
+    return {
+      rejected: true,
+      reason: 'community_protection',
+      violations: protectionCheck.violations,
+      recommendations: protectionCheck.recommendations,
+      message: 'This event cannot proceed due to community protection concerns. Please address the issues and resubmit.'
+    };
+  }
+
+  /**
+   * GENERATE EVENT ERROR RESPONSE: Handle event creation errors
+   */
+  generateEventErrorResponse(error, eventData) {
+    return {
+      error: true,
+      message: error.message,
+      eventTitle: eventData?.title || 'Unknown',
+      layer: 'EventsLiberationService (Layer 3)',
+      suggestions: [
+        'Verify all required event data is provided',
+        'Ensure revenue sharing meets 75% creator sovereignty',
+        'Check that event aligns with liberation values'
+      ]
+    };
+  }
+
+  /**
+   * GENERATE VOTING ERROR RESPONSE: Handle democratic voting errors
+   */
+  generateVotingErrorResponse(error, eventId) {
+    return {
+      error: true,
+      message: error.message,
+      eventId,
+      layer: 'Democratic Governance',
+      suggestions: [
+        'Verify event exists and is eligible for voting',
+        'Check community member eligibility',
+        'Ensure one-member-one-vote compliance'
+      ]
+    };
+  }
+
+  /**
+   * GENERATE DISCOVERY ERROR RESPONSE: Handle event discovery errors
+   */
+  generateDiscoveryErrorResponse(error) {
+    return {
+      error: true,
+      message: error.message,
+      events: [],
+      layer: 'Event Discovery',
+      suggestions: [
+        'Check discovery request parameters',
+        'Verify database connectivity',
+        'Try simplified discovery criteria'
+      ]
+    };
+  }
+
+  /**
+   * LIBERATION FILTERING: Apply liberation-focused filtering
+   */
+  applyLiberationFilters(discoveryRequest) {
+    return [
+      { type: 'liberation_score', minimum: this.liberationConfig.liberationScoreMinimum },
+      { type: 'creator_sovereignty', minimum: this.liberationConfig.creatorSovereigntyMinimum },
+      { type: 'community_benefit', required: true }
+    ];
+  }
+
+  /**
+   * COMMUNITY PROTECTION FILTERING: Filter out harmful events
+   */
+  applyCommunityProtectionFilters(discoveryRequest) {
+    return [
+      { type: 'anti_oppression', enabled: true },
+      { type: 'trauma_safety', enabled: true },
+      { type: 'accessibility', enabled: true }
+    ];
+  }
+
+  /**
+   * DEMOCRATIC RANKING: Community-governed event ranking
+   */
+  async applyDemocraticRanking(discoveryRequest) {
+    return {
+      active: true,
+      algorithm: 'community_weighted',
+      factors: ['liberation_score', 'creator_sovereignty', 'community_votes']
+    };
+  }
+
+  /**
+   * CREATOR SOVEREIGNTY BOOST: Prioritize creator-sovereign events
+   */
+  applyCreatorSovereigntyBoost(discoveryRequest) {
+    return {
+      enabled: true,
+      minimumShare: this.liberationConfig.creatorSovereigntyMinimum,
+      boostFactor: 1.5
+    };
+  }
+
+  /**
+   * CULTURAL AUTHENTICITY RANKING: Black queer empowerment prioritization
+   */
+  async applyCulturalAuthenticityRanking(events) {
+    return events.map(event => ({
+      ...event,
+      culturalAuthenticityBoost: event.culturalAuthenticity >= 0.8 ? 1.2 : 1.0,
+      blackQueerEmpowermentPriority: true
+    })).sort((a, b) =>
+      (b.liberationScore * b.culturalAuthenticityBoost) -
+      (a.liberationScore * a.culturalAuthenticityBoost)
+    );
+  }
+
+  /**
+   * APPLY LIBERATION TO DECISION: Ensure democratic decisions align with liberation
+   */
+  async applyLiberationToDecision(democraticDecision, eventData) {
+    // Liberation values override pure democracy if needed
+    if (democraticDecision.approved && eventData.liberationScore < 0.5) {
+      return {
+        approved: false,
+        method: 'liberation_override',
+        reason: 'Liberation values take precedence over pure democracy',
+        originalDecision: democraticDecision.approved,
+        liberationAlignment: false
+      };
+    }
+
+    return {
+      approved: democraticDecision.approved,
+      method: democraticDecision.method,
+      liberationAlignment: true,
+      liberationScore: eventData.liberationScore
     };
   }
 

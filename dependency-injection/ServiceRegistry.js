@@ -11,6 +11,7 @@ const serviceContainer = require('./ServiceContainer');
 // Import all service classes (Layer 3: Business Logic)
 const NewsroomLiberationService = require('../layer-3-business-logic/NewsroomLiberationService');
 const EconomicJusticeService = require('../layer-3-business-logic/EconomicJusticeService');
+const EventsLiberationService = require('../layer-3-business-logic/EventsLiberationService');
 
 // Import data sovereignty service instance (Layer 5: Data Persistence)
 const dataSovereigntyServiceInstance = require('../layer-5-data-sovereignty/DataSovereigntyService');
@@ -26,6 +27,7 @@ function bootstrapServices() {
     // Register Layer 3: Business Logic Services (as factories for clean instantiation)
     serviceContainer.register('EconomicJusticeService', EconomicJusticeService, false);
     serviceContainer.register('NewsroomLiberationService', NewsroomLiberationService, false);
+    serviceContainer.register('EventsLiberationService', EventsLiberationService, false);
 
     // Register Layer 5: Data Sovereignty Service (pre-existing singleton instance)
     serviceContainer.registerFactory('DataSovereigntyService', () => dataSovereigntyServiceInstance);
@@ -75,6 +77,7 @@ function createAPILayerServices() {
     // Business Logic Services (Layer 3) - pure dependency injection
     newsroom: serviceContainer.get('NewsroomLiberationServiceWithDependencies'),
     economicJustice: serviceContainer.get('EconomicJusticeService'),
+    events: serviceContainer.get('EventsLiberationService'),
 
     // Data Sovereignty Service (Layer 5) - singleton
     dataSovereignty: serviceContainer.get('DataSovereigntyService')
