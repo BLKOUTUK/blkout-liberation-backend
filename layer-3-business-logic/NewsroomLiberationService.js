@@ -19,7 +19,8 @@ const { EventEmitter } = require('events');
  * Uses dependency injection for clean layer separation
  */
 
-const economicJusticeService = require('./EconomicJusticeService');
+const EconomicJusticeService = require('./EconomicJusticeService');
+const economicJusticeService = new EconomicJusticeService();
 
 class NewsroomLiberationService {
   constructor() {
