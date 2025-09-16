@@ -6,7 +6,7 @@
  * ONLY: Implements liberation metrics business logic through repository contracts
  */
 
-const { ILiberationMetricsService } = require('../../../../contracts/business-logic-interfaces');
+const { ILiberationMetricsService } = require('../../contracts/business-logic-interfaces');
 
 class LiberationMetricsServiceImpl extends ILiberationMetricsService {
   constructor(auditTrailRepository, communityDataRepository) {

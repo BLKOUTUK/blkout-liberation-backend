@@ -6,7 +6,7 @@
  * ONLY: Implements creator sovereignty business logic through repository contracts
  */
 
-const { ICreatorSovereigntyService } = require('../../../../contracts/business-logic-interfaces');
+const { ICreatorSovereigntyService } = require('../../contracts/business-logic-interfaces');
 
 class CreatorSovereigntyServiceImpl extends ICreatorSovereigntyService {
   constructor(creatorDataRepository, auditTrailRepository) {

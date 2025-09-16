@@ -6,7 +6,7 @@
  * ONLY: Implements community protection business logic through repository contracts
  */
 
-const { ICommunityProtectionService } = require('../../../../contracts/business-logic-interfaces');
+const { ICommunityProtectionService } = require('../../contracts/business-logic-interfaces');
 
 class CommunityProtectionServiceImpl extends ICommunityProtectionService {
   constructor(communityDataRepository, auditTrailRepository) {

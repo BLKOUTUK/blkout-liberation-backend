@@ -6,7 +6,7 @@
  * ONLY: Implements revenue transparency business logic through repository contracts
  */
 
-const { IRevenueTransparencyService } = require('../../../../contracts/business-logic-interfaces');
+const { IRevenueTransparencyService } = require('../../contracts/business-logic-interfaces');
 
 class RevenueTransparencyServiceImpl extends IRevenueTransparencyService {
   constructor(creatorDataRepository, communityDataRepository, auditTrailRepository) {

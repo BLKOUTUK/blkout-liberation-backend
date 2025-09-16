@@ -6,7 +6,7 @@
  * ONLY: Implements feature flag business logic through repository contracts
  */
 
-const { IFeatureFlagService } = require('../../../../contracts/business-logic-interfaces');
+const { IFeatureFlagService } = require('../../contracts/business-logic-interfaces');
 
 class FeatureFlagServiceImpl extends IFeatureFlagService {
   constructor(communityDataRepository, auditTrailRepository) {

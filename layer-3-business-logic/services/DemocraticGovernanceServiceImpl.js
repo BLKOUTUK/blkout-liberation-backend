@@ -6,7 +6,7 @@
  * ONLY: Implements democratic governance business logic through repository contracts
  */
 
-const { IDemocraticGovernanceService } = require('../../../../contracts/business-logic-interfaces');
+const { IDemocraticGovernanceService } = require('../../contracts/business-logic-interfaces');
 
 class DemocraticGovernanceServiceImpl extends IDemocraticGovernanceService {
   constructor(communityDataRepository, auditTrailRepository) {

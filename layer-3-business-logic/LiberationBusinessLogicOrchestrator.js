@@ -18,7 +18,7 @@ const EventsLiberationService = require('./EventsLiberationService');
 const NewsroomLiberationService = require('./NewsroomLiberationService');
 
 class LiberationBusinessLogicOrchestrator extends EventEmitter {
-  constructor(options = {}) {
+  constructor(newsroomLiberationService, eventsLiberationService, ivorAILiberationService) {
     super();
 
     // MATHEMATICAL LIBERATION VALUES ENFORCEMENT
@@ -97,11 +97,11 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
       }
     };
 
-    // Initialize liberation services
+    // DEPENDENCY INJECTION: Services provided through constructor
     this.services = {
-      ivorAI: new IvorAILiberationService(options.ivorAI),
-      events: new EventsLiberationService(options.events),
-      newsroom: new NewsroomLiberationService(options.newsroom)
+      newsroom: newsroomLiberationService,
+      events: eventsLiberationService,
+      ivorAI: ivorAILiberationService
     };
 
     // Liberation metrics tracking
@@ -499,18 +499,21 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
 
   setupServiceCoordination() {
     // Listen for service events and coordinate responses
+    // Note: Service event listening is optional - services may not emit events
     Object.values(this.services).forEach(service => {
-      service.on('liberation_response_generated', (data) => {
-        this.emit('cross_service_liberation_event', { service: 'ivorAI', data });
-      });
+      if (service && typeof service.on === 'function') {
+        service.on('liberation_response_generated', (data) => {
+          this.emit('cross_service_liberation_event', { service: 'ivorAI', data });
+        });
 
-      service.on('event_created', (data) => {
-        this.emit('cross_service_liberation_event', { service: 'events', data });
-      });
+        service.on('event_created', (data) => {
+          this.emit('cross_service_liberation_event', { service: 'events', data });
+        });
 
-      service.on('liberation_content_created', (data) => {
-        this.emit('cross_service_liberation_event', { service: 'newsroom', data });
-      });
+        service.on('liberation_content_created', (data) => {
+          this.emit('cross_service_liberation_event', { service: 'newsroom', data });
+        });
+      }
     });
   }
 
