@@ -1,34 +1,28 @@
 /**
  * api-gateway.js
  * Layer 2: API Gateway
- * Responsible for routing requests to appropriate services with dependency injection
- * NO business logic, NO data persistence
- * Implements proper separation of concerns through dependency injection
+ * Responsible for routing requests to appropriate services with PURE dependency injection
+ * NO business logic, NO data persistence, NO direct service instantiation
+ * Uses ServiceRegistry for complete layer separation
  */
 
-// Import business logic services (Layer 3)
-const NewsroomLiberationService = require('../layer-3-business-logic/NewsroomLiberationService');
-const economicJusticeService = require('../layer-3-business-logic/EconomicJusticeService');
-
-// Import data sovereignty service (Layer 5)
-const dataSovereigntyService = require('../layer-5-data-sovereignty/DataSovereigntyService');
+// Import pure dependency injection system
+const { bootstrapServices, createAPILayerServices } = require('../dependency-injection/ServiceRegistry');
 
 /**
- * Initialize API Gateway with proper dependency injection
- * This ensures clean separation between layers
+ * Initialize API Gateway with PURE dependency injection
+ * NO direct service instantiation - all dependencies injected via container
  */
 class LiberationAPIGateway {
   constructor() {
-    // Layer 3: Business Logic Services (NO persistence)
-    this.businessLogicServices = {
-      newsroom: new NewsroomLiberationService(),
-      economicJustice: economicJusticeService
-    };
+    // Bootstrap all services in the dependency injection container
+    bootstrapServices();
 
-    // Layer 5: Data Sovereignty Service (persistence only)
-    this.dataSovereigntyService = dataSovereigntyService;
+    // Get all services through pure dependency injection
+    this.services = createAPILayerServices();
 
-    console.log('🌐 Liberation API Gateway initialized with proper layer separation');
+    console.log('🌐 Liberation API Gateway initialized with PURE dependency injection');
+    console.log('📋 Available services:', Object.keys(this.services));
   }
 
   /**
@@ -52,7 +46,7 @@ class LiberationAPIGateway {
 
       // STEP 1: Delegate to Layer 3 Business Logic Service (NO PERSISTENCE)
       console.log('🧠 Delegating to NewsroomLiberationService (Layer 3)');
-      const businessLogicResult = this.businessLogicServices.newsroom.createLiberationContent(contentData);
+      const businessLogicResult = this.services.newsroom.createLiberationContent(contentData);
 
       // Check if business logic returned an error or guidance
       if (businessLogicResult.error) {
@@ -82,7 +76,7 @@ class LiberationAPIGateway {
 
       // STEP 2: Delegate to Layer 5 Data Sovereignty Service (PERSISTENCE ONLY)
       console.log('🔒 Delegating to DataSovereigntyService (Layer 5)');
-      const storageResult = await this.dataSovereigntyService.storeWithSovereignty({
+      const storageResult = await this.services.dataSovereignty.storeWithSovereignty({
         data: businessLogicResult.content,
         sovereigntyRequirements: {
           communityId: 'blkout-community',
@@ -142,7 +136,7 @@ class LiberationAPIGateway {
 
       // STEP 1: Delegate to Layer 5 Data Sovereignty Service (RETRIEVAL ONLY)
       console.log('🔒 Delegating to DataSovereigntyService (Layer 5) for retrieval');
-      const retrievalResult = await this.dataSovereigntyService.retrieveWithGovernance({
+      const retrievalResult = await this.services.dataSovereignty.retrieveWithGovernance({
         dataId: id,
         requesterId: 'newsroom-api',
         accessType: 'public_read'
@@ -203,7 +197,7 @@ class LiberationAPIGateway {
 
       // STEP 1: Retrieve content from Layer 5 (Data operations only)
       console.log('🔒 Retrieving content for moderation (Layer 5)');
-      const content = await this.dataSovereigntyService.retrieveWithGovernance({
+      const content = await this.services.dataSovereignty.retrieveWithGovernance({
         dataId: contentId,
         requesterId: 'moderation-system',
         accessType: 'moderation_read'
@@ -211,7 +205,7 @@ class LiberationAPIGateway {
 
       // STEP 2: Delegate moderation logic to Layer 3 (Business logic only)
       console.log('🧠 Delegating moderation logic (Layer 3)');
-      const moderationResult = this.businessLogicServices.newsroom.moderateContentWithCommunity(
+      const moderationResult = this.services.newsroom.moderateContentWithCommunity(
         content,
         moderationRequest
       );
@@ -219,7 +213,7 @@ class LiberationAPIGateway {
       // STEP 3: If moderation decision affects storage, delegate to Layer 5
       if (moderationResult.moderationDecision.approved === false) {
         // Track moderation decision in data layer
-        await this.dataSovereigntyService.trackDataOperation({
+        await this.services.dataSovereignty.trackDataOperation({
           operationType: 'content_moderation',
           contentId,
           moderationResult: moderationResult.moderationDecision,
@@ -273,14 +267,14 @@ class LiberationAPIGateway {
 
       // STEP 1: Delegate to Layer 3 Business Logic (Calculations only)
       console.log('🧠 Delegating revenue transparency calculation (Layer 3)');
-      const transparencyReport = this.businessLogicServices.newsroom.calculateContentRevenueTransparency(
+      const transparencyReport = this.services.newsroom.calculateContentRevenueTransparency(
         contentId,
         revenueData
       );
 
       // STEP 2: Store transparency calculation in Layer 5 (Persistence only)
       console.log('🔒 Storing transparency report (Layer 5)');
-      await this.dataSovereigntyService.storeWithSovereignty({
+      await this.services.dataSovereignty.storeWithSovereignty({
         data: {
           id: `transparency_${contentId}`,
           contentId,
@@ -328,7 +322,7 @@ class LiberationAPIGateway {
       console.log('🏥 Processing health check request');
 
       // Check Layer 3 Business Logic health
-      const businessLogicHealth = this.businessLogicServices.newsroom.performNewsroomBusinessLogicHealth();
+      const businessLogicHealth = this.services.newsroom.performNewsroomBusinessLogicHealth();
 
       // Check Layer 5 Data Sovereignty health (would be implemented)
       const dataSovereigntyHealth = {
@@ -341,16 +335,21 @@ class LiberationAPIGateway {
       const response = {
         gatewayStatus: 'healthy',
         layer: 2,
-        responsibilities: ['API routing', 'Request validation', 'Layer coordination', 'Dependency injection'],
+        responsibilities: ['API routing', 'Request validation', 'Layer coordination', 'PURE dependency injection'],
         layerSeparation: {
           compliant: true,
           businessLogicSeparated: businessLogicHealth.businessLogicOnly,
           dataPersistenceSeparated: dataSovereigntyHealth.dataPersistenceOnly,
-          noDirectCoupling: true
+          noDirectCoupling: true,
+          pureDependencyInjection: true
         },
         serviceHealth: {
           businessLogic: businessLogicHealth,
           dataSovereignty: dataSovereigntyHealth
+        },
+        dependencyInjection: {
+          containerStatus: 'operational',
+          pureInjection: true
         },
         timestamp: new Date().toISOString()
       };
