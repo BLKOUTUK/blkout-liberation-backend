@@ -214,8 +214,11 @@ async function testProductionConfigurationValidation() {
     // Test service behavior in production mode
     console.log('  🧪 Testing services in production mode...');
 
-    const NewsroomLiberationService = require('./layer-3-business-logic/NewsroomLiberationService');
-    const newsroomService = new NewsroomLiberationService();
+    // Use dependency injection instead of direct instantiation
+    const { bootstrapServices, createAPILayerServices } = require('./dependency-injection/ServiceRegistry');
+    bootstrapServices();
+    const services = createAPILayerServices();
+    const newsroomService = services.newsroom;
 
     // Test basic functionality in production mode
     const testContent = {
