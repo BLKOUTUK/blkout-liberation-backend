@@ -482,6 +482,7 @@ class AuditTrailRepositoryImpl extends IAuditTrailRepository {
   }
 }
 
+// Export individual repository classes for consistent pattern
 module.exports = {
   CommunityDataRepositoryImpl,
   CreatorDataRepositoryImpl,

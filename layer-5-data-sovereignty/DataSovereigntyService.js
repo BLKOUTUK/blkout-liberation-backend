@@ -274,5 +274,5 @@ class DataSovereigntyService extends DataSovereigntyInterface {
   }
 }
 
-// Export singleton instance for use in API Gateway
-module.exports = new DataSovereigntyService();
+// Export class for consistent instantiation pattern
+module.exports = DataSovereigntyService;

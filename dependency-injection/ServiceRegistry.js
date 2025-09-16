@@ -15,7 +15,8 @@ const EventsLiberationService = require('../layer-3-business-logic/EventsLiberat
 const IvorAILiberationService = require('../layer-3-business-logic/IvorAILiberationService');
 
 // Import data sovereignty service instance (Layer 5: Data Persistence)
-const dataSovereigntyServiceInstance = require('../layer-5-data-sovereignty/DataSovereigntyService');
+const DataSovereigntyService = require('../layer-5-data-sovereignty/DataSovereigntyService');
+const dataSovereigntyServiceInstance = new DataSovereigntyService();
 
 /**
  * Bootstrap all services into the dependency injection container

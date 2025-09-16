@@ -11,7 +11,8 @@ const newsroomLiberationService = require('../layer-3-business-logic/NewsroomLib
 const economicJusticeService = require('../layer-3-business-logic/EconomicJusticeService');
 
 // Import data sovereignty service (Layer 5)
-const dataSovereigntyService = require('../layer-5-data-sovereignty/DataSovereigntyService');
+const DataSovereigntyService = require('../layer-5-data-sovereignty/DataSovereigntyService');
+const dataSovereigntyService = new DataSovereigntyService();
 
 /**
  * Initialize API Gateway with proper dependency injection
