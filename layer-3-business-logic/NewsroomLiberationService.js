@@ -503,4 +503,4 @@ class NewsroomLiberationService {
   }
 }
 
-module.exports = new NewsroomLiberationService();
+module.exports = NewsroomLiberationService;
