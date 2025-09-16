@@ -7,7 +7,7 @@
  */
 
 // Import business logic services (Layer 3)
-const newsroomLiberationService = require('../layer-3-business-logic/NewsroomLiberationService');
+const NewsroomLiberationService = require('../layer-3-business-logic/NewsroomLiberationService');
 const economicJusticeService = require('../layer-3-business-logic/EconomicJusticeService');
 
 // Import data sovereignty service (Layer 5)
@@ -21,7 +21,7 @@ class LiberationAPIGateway {
   constructor() {
     // Layer 3: Business Logic Services (NO persistence)
     this.businessLogicServices = {
-      newsroom: newsroomLiberationService,
+      newsroom: new NewsroomLiberationService(),
       economicJustice: economicJusticeService
     };
 

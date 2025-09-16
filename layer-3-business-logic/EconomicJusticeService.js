@@ -129,5 +129,5 @@ class EconomicJusticeService {
   }
 }
 
-// Export singleton instance for use in other services
+// Export singleton instance for use in other services (kept as singleton for consistency)
 module.exports = new EconomicJusticeService();

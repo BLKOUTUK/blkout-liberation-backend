@@ -8,9 +8,12 @@ console.log('🧪 TESTING LAYER SEPARATION AND DEPLOYMENT COMPATIBILITY\n');
 
 // Import services to test layer separation
 const economicJusticeService = require('./layer-3-business-logic/EconomicJusticeService');
-const newsroomLiberationService = require('./layer-3-business-logic/NewsroomLiberationService');
+const NewsroomLiberationService = require('./layer-3-business-logic/NewsroomLiberationService');
 const dataSovereigntyService = require('./layer-5-data-sovereignty/DataSovereigntyService');
 const apiGateway = require('./layer-2-api-gateway/api-gateway');
+
+// Create instance of NewsroomLiberationService for testing
+const newsroomLiberationService = new NewsroomLiberationService();
 
 /**
  * TEST 1: Layer 3 Business Logic Independence
