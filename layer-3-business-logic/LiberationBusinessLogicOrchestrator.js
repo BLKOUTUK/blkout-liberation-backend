@@ -13,9 +13,9 @@
  */
 
 const { EventEmitter } = require('events');
-const IvorAILiberationService = require('./IvorAILiberationService');
-const EventsLiberationService = require('./EventsLiberationService');
-const NewsroomLiberationService = require('./NewsroomLiberationService');
+
+// Liberation Business Logic Orchestrator uses dependency injection
+// Services are passed in constructor options, no direct imports needed
 
 class LiberationBusinessLogicOrchestrator extends EventEmitter {
   constructor(options = {}) {
@@ -97,12 +97,15 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
       }
     };
 
-    // Initialize liberation services
+    // Use dependency-injected services passed from constructor
     this.services = {
-      ivorAI: new IvorAILiberationService(options.ivorAI),
-      events: new EventsLiberationService(options.events),
-      newsroom: new NewsroomLiberationService(options.newsroom)
+      ivorAI: options.ivorAI,
+      events: options.events,
+      newsroom: options.newsroom
     };
+
+    console.log('🏴‍☠️ Liberation Business Logic Orchestrator initialized with dependency injection');
+    console.log('📋 Services received:', Object.keys(this.services));
 
     // Liberation metrics tracking
     this.liberationMetrics = {

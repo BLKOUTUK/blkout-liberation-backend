@@ -12,6 +12,7 @@ const serviceContainer = require('./ServiceContainer');
 const NewsroomLiberationService = require('../layer-3-business-logic/NewsroomLiberationService');
 const EconomicJusticeService = require('../layer-3-business-logic/EconomicJusticeService');
 const EventsLiberationService = require('../layer-3-business-logic/EventsLiberationService');
+const IvorAILiberationService = require('../layer-3-business-logic/IvorAILiberationService');
 
 // Import data sovereignty service instance (Layer 5: Data Persistence)
 const dataSovereigntyServiceInstance = require('../layer-5-data-sovereignty/DataSovereigntyService');
@@ -28,6 +29,7 @@ function bootstrapServices() {
     serviceContainer.register('EconomicJusticeService', EconomicJusticeService, false);
     serviceContainer.register('NewsroomLiberationService', NewsroomLiberationService, false);
     serviceContainer.register('EventsLiberationService', EventsLiberationService, false);
+    serviceContainer.register('IvorAILiberationService', IvorAILiberationService, false);
 
     // Register Layer 5: Data Sovereignty Service (pre-existing singleton instance)
     serviceContainer.registerFactory('DataSovereigntyService', () => dataSovereigntyServiceInstance);
@@ -78,6 +80,7 @@ function createAPILayerServices() {
     newsroom: serviceContainer.get('NewsroomLiberationServiceWithDependencies'),
     economicJustice: serviceContainer.get('EconomicJusticeService'),
     events: serviceContainer.get('EventsLiberationService'),
+    ivorAI: serviceContainer.get('IvorAILiberationService'),
 
     // Data Sovereignty Service (Layer 5) - singleton
     dataSovereignty: serviceContainer.get('DataSovereigntyService')

@@ -342,7 +342,7 @@ class Phase3DeploymentOrchestrator {
 
     // Initialize orchestrator with dependency-injected services
     this.liberationOrchestrator = new LiberationBusinessLogicOrchestrator({
-      ivorAI: {}, // Still placeholder - IvorAILiberationService not yet in DI
+      ivorAI: services.ivorAI,
       events: services.events,
       newsroom: services.newsroom
     });
