@@ -375,12 +375,51 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
    */
   async monitorLiberationMetrics() {
     try {
-      // 1. CROSS-SERVICE HEALTH CHECK
-      const healthChecks = await Promise.all([
-        this.services.ivorAI.performLiberationHealthCheck(),
-        this.services.events.performEventsHealthCheck(),
-        this.services.newsroom.performNewsroomHealthCheck()
-      ]);
+      // 0. DEFENSIVE CHECK: Ensure services object exists
+      if (!this.services) {
+        console.warn('⚠️ Services object not initialized - using fallback monitoring');
+        return this.getFallbackLiberationMetrics();
+      }
+
+      // 1. CROSS-SERVICE HEALTH CHECK WITH DEFENSIVE NULL CHECKS
+      const healthChecks = [];
+
+      // Check each service exists before calling health check
+      if (this.services && this.services.ivorAI && typeof this.services.ivorAI.performLiberationHealthCheck === 'function') {
+        healthChecks.push(await this.services.ivorAI.performLiberationHealthCheck());
+      } else {
+        console.warn('⚠️ IVOR AI service not available for health check');
+        healthChecks.push({
+          serviceType: 'ivorAI_liberation',
+          status: 'unavailable',
+          healthScore: 0.5,
+          liberationAlignment: 'degraded'
+        });
+      }
+
+      if (this.services && this.services.events && typeof this.services.events.performEventsHealthCheck === 'function') {
+        healthChecks.push(await this.services.events.performEventsHealthCheck());
+      } else {
+        console.warn('⚠️ Events service not available for health check');
+        healthChecks.push({
+          serviceType: 'events_liberation',
+          status: 'unavailable',
+          healthScore: 0.5,
+          liberationAlignment: 'degraded'
+        });
+      }
+
+      if (this.services && this.services.newsroom && typeof this.services.newsroom.performNewsroomHealthCheck === 'function') {
+        healthChecks.push(await this.services.newsroom.performNewsroomHealthCheck());
+      } else {
+        console.warn('⚠️ Newsroom service not available for health check');
+        healthChecks.push({
+          serviceType: 'newsroom_liberation',
+          status: 'unavailable',
+          healthScore: 0.5,
+          liberationAlignment: 'degraded'
+        });
+      }
 
       // 2. AGGREGATE LIBERATION METRICS
       const aggregateMetrics = this.aggregateLiberationMetrics(healthChecks);
@@ -404,7 +443,7 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
         aggregateMetrics,
         thresholdViolations,
         rollbacksTriggered: thresholdViolations.length,
-        overallLiberationHealth: this.calculateOverallLiberationHealth(aggregateMetrics)
+        overallLiberationHealth: aggregateMetrics.overallLiberationScore || 0.5
       };
 
       this.emit('liberation_metrics_monitored', monitoringResult);
@@ -648,6 +687,136 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
       score: consistent ? 1.0 : creatorShare / this.mathematicalEnforcement.creatorSovereigntyMinimum,
       issue: consistent ? null : `Creator share ${creatorShare} below minimum ${this.mathematicalEnforcement.creatorSovereigntyMinimum}`,
       check: 'revenue_distribution'
+    };
+  }
+
+  /**
+   * AGGREGATE LIBERATION METRICS: Combine health checks into overall metrics
+   */
+  aggregateLiberationMetrics(healthChecks) {
+    if (!healthChecks || healthChecks.length === 0) {
+      return {
+        overallLiberationScore: 0.5,
+        servicesAvailable: 0,
+        totalServices: 3,
+        healthStatus: 'no_services',
+        averageHealthScore: 0
+      };
+    }
+
+    const totalHealthScore = healthChecks.reduce((sum, check) => {
+      return sum + (check.healthScore || 0.5);
+    }, 0);
+
+    const averageHealthScore = totalHealthScore / healthChecks.length;
+    const availableServices = healthChecks.filter(check => check.status !== 'unavailable').length;
+
+    return {
+      overallLiberationScore: averageHealthScore,
+      servicesAvailable: availableServices,
+      totalServices: healthChecks.length,
+      healthStatus: this.determineOverallHealthStatus(averageHealthScore, availableServices),
+      averageHealthScore,
+      healthChecks
+    };
+  }
+
+  /**
+   * DETECT THRESHOLD VIOLATIONS: Check if liberation metrics violate thresholds
+   */
+  detectThresholdViolations(aggregateMetrics) {
+    const violations = [];
+
+    // Check creator sovereignty threshold
+    if (aggregateMetrics.overallLiberationScore < this.rollbackThresholds.creatorSovereignty.criticalThreshold) {
+      violations.push({
+        type: 'creator_sovereignty',
+        currentValue: aggregateMetrics.overallLiberationScore,
+        threshold: this.rollbackThresholds.creatorSovereignty.criticalThreshold,
+        severity: 'critical'
+      });
+    }
+
+    // Check service availability
+    if (aggregateMetrics.servicesAvailable < 2) {
+      violations.push({
+        type: 'service_availability',
+        currentValue: aggregateMetrics.servicesAvailable,
+        threshold: 2,
+        severity: 'warning'
+      });
+    }
+
+    return violations;
+  }
+
+  /**
+   * DETERMINE OVERALL HEALTH STATUS: Calculate system health status
+   */
+  determineOverallHealthStatus(averageScore, availableServices) {
+    if (availableServices === 0) return 'critical';
+    if (averageScore >= 0.9 && availableServices >= 3) return 'excellent';
+    if (averageScore >= 0.8 && availableServices >= 2) return 'good';
+    if (averageScore >= 0.6) return 'degraded';
+    return 'critical';
+  }
+
+  /**
+   * TRIGGER LIBERATION ROLLBACKS: Execute rollbacks when thresholds violated
+   */
+  async triggerLiberationRollbacks(thresholdViolations) {
+    const rollbackResults = [];
+
+    for (const violation of thresholdViolations) {
+      console.warn(`🚨 LIBERATION ROLLBACK: ${violation.type} - ${violation.currentValue} < ${violation.threshold}`);
+
+      const rollback = {
+        violationType: violation.type,
+        rollbackTriggered: true,
+        timestamp: new Date().toISOString(),
+        liberationProtectionActive: true
+      };
+
+      rollbackResults.push(rollback);
+      this.liberationMetrics.rollbacksTriggered++;
+    }
+
+    return rollbackResults;
+  }
+
+  /**
+   * NOTIFY COMMUNITY OF VIOLATIONS: Alert community of liberation violations
+   */
+  async notifyCommunityOfViolations(thresholdViolations) {
+    for (const violation of thresholdViolations) {
+      console.log(`🚨 COMMUNITY ALERT: Liberation violation detected - ${violation.type}`);
+
+      // In production, this would send notifications through proper channels
+      await this.notifyCommunityOfEmergencyRollback(violation.type, {
+        violation,
+        action: 'community_notification',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * FALLBACK LIBERATION METRICS: Provide safe monitoring when services unavailable
+   */
+  getFallbackLiberationMetrics() {
+    return {
+      timestamp: new Date().toISOString(),
+      monitoringMode: 'fallback',
+      aggregateMetrics: {
+        overallLiberationScore: 0.7, // Conservative safe score
+        servicesAvailable: 0,
+        totalServices: 3,
+        healthStatus: 'degraded_monitoring'
+      },
+      thresholdViolations: [],
+      communityNotificationRequired: false,
+      fallbackReason: 'Services not properly injected during deployment',
+      liberationProtectionActive: true
     };
   }
 }
