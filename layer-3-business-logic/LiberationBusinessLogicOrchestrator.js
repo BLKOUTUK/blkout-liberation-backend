@@ -691,6 +691,146 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
   }
 
   /**
+   * FEATURE FLAG GOVERNANCE VALIDATION: Democratic validation for feature flags
+   */
+  async validateFeatureFlagGovernance(flagRequest, currentFlag) {
+    try {
+      console.log(`🗳️ Validating governance for feature flag: ${flagRequest.flagName}`);
+
+      const governanceValidation = {
+        authorized: false,
+        requirement: '',
+        communityControlValidated: false,
+        democraticProcessFollowed: false,
+        transparencyMaintained: false,
+        liberationAligned: false,
+        governanceScore: 0,
+        governanceViolations: []
+      };
+
+      // Check community control requirement
+      if (flagRequest.communityApproved === true && flagRequest.communityVotingCompleted === true) {
+        governanceValidation.communityControlValidated = true;
+      } else {
+        governanceValidation.governanceViolations.push('Community control not validated');
+      }
+
+      // Check democratic process
+      if (flagRequest.democraticVoting === true && flagRequest.oneMemberOneVote === true) {
+        governanceValidation.democraticProcessFollowed = true;
+      } else {
+        governanceValidation.governanceViolations.push('Democratic process not followed');
+      }
+
+      // Check transparency
+      if (flagRequest.publicDiscussion === true && flagRequest.decisionRationale === true) {
+        governanceValidation.transparencyMaintained = true;
+      } else {
+        governanceValidation.governanceViolations.push('Transparency requirements not met');
+      }
+
+      // Check liberation alignment
+      const liberationImpact = await this.assessFeatureFlagLiberationImpact(flagRequest);
+      if (liberationImpact.liberationScore >= 0.7) {
+        governanceValidation.liberationAligned = true;
+      } else {
+        governanceValidation.governanceViolations.push('Feature not aligned with liberation values');
+      }
+
+      // Calculate governance score
+      const validationChecks = [
+        governanceValidation.communityControlValidated,
+        governanceValidation.democraticProcessFollowed,
+        governanceValidation.transparencyMaintained,
+        governanceValidation.liberationAligned
+      ];
+
+      governanceValidation.governanceScore = validationChecks.filter(check => check).length / validationChecks.length;
+      governanceValidation.authorized = governanceValidation.governanceScore >= 0.75; // 75% governance threshold
+      governanceValidation.requirement = governanceValidation.authorized ?
+        'Governance requirements met' :
+        `Governance violations: ${governanceValidation.governanceViolations.join(', ')}`;
+
+      console.log(`✅ Governance validation completed - Authorized: ${governanceValidation.authorized}`);
+      return governanceValidation;
+
+    } catch (error) {
+      console.error('🚨 Feature flag governance validation failed:', error);
+      return {
+        authorized: false,
+        requirement: `Governance validation error: ${error.message}`,
+        communityControlValidated: false,
+        democraticProcessFollowed: false,
+        transparencyMaintained: false,
+        liberationAligned: false,
+        governanceScore: 0,
+        governanceViolations: [error.message]
+      };
+    }
+  }
+
+  /**
+   * FEATURE FLAG LIBERATION IMPACT ASSESSMENT: Assess impact on liberation values
+   */
+  async assessFeatureFlagLiberationImpact(flagRequest) {
+    try {
+      const liberationImpact = {
+        liberationScore: 0.5,
+        creatorsEmpowered: false,
+        communityBenefited: false,
+        transparencyEnhanced: false,
+        democraticProcessStrengthened: false,
+        assessmentDetails: {}
+      };
+
+      // Assess creator empowerment
+      if (flagRequest.creatorSovereigntyEnhanced === true) {
+        liberationImpact.creatorsEmpowered = true;
+        liberationImpact.liberationScore += 0.25;
+      }
+
+      // Assess community benefit
+      if (flagRequest.communityBenefitProvided === true) {
+        liberationImpact.communityBenefited = true;
+        liberationImpact.liberationScore += 0.25;
+      }
+
+      // Assess transparency enhancement
+      if (flagRequest.transparencyIncreased === true) {
+        liberationImpact.transparencyEnhanced = true;
+        liberationImpact.liberationScore += 0.25;
+      }
+
+      // Assess democratic strengthening
+      if (flagRequest.democraticParticipationIncreased === true) {
+        liberationImpact.democraticProcessStrengthened = true;
+        liberationImpact.liberationScore += 0.25;
+      }
+
+      liberationImpact.assessmentDetails = {
+        flagName: flagRequest.flagName,
+        action: flagRequest.action,
+        expectedOutcome: flagRequest.expectedOutcome || 'Not specified',
+        timestamp: new Date().toISOString()
+      };
+
+      console.log(`🏴‍☠️ Liberation impact assessed - Score: ${liberationImpact.liberationScore}`);
+      return liberationImpact;
+
+    } catch (error) {
+      console.error('🚨 Liberation impact assessment failed:', error);
+      return {
+        liberationScore: 0,
+        creatorsEmpowered: false,
+        communityBenefited: false,
+        transparencyEnhanced: false,
+        democraticProcessStrengthened: false,
+        assessmentDetails: { error: error.message }
+      };
+    }
+  }
+
+  /**
    * AGGREGATE LIBERATION METRICS: Combine health checks into overall metrics
    */
   aggregateLiberationMetrics(healthChecks) {
