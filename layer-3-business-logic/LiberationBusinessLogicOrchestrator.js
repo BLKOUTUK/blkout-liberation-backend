@@ -831,6 +831,158 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
   }
 
   /**
+   * FEATURE FLAG CHANGE APPLICATION: Apply approved feature flag changes
+   */
+  async applyFeatureFlagChange(flagRequest, currentFlag, liberationImpact) {
+    try {
+      console.log(`🔧 Applying feature flag change: ${flagRequest.flagName} → ${flagRequest.action}`);
+
+      const updatedFlag = {
+        ...currentFlag,
+        lastUpdated: new Date().toISOString(),
+        lastAction: flagRequest.action,
+        lastGovernanceValidation: {
+          timestamp: new Date().toISOString(),
+          authorized: true,
+          liberationScore: liberationImpact.liberationScore
+        }
+      };
+
+      // Apply the specific action
+      if (flagRequest.action === 'enable') {
+        updatedFlag.enabled = true;
+        console.log(`✅ Feature flag '${flagRequest.flagName}' enabled`);
+      } else if (flagRequest.action === 'disable') {
+        if (currentFlag.canBeDisabled) {
+          updatedFlag.enabled = false;
+          console.log(`⏸️ Feature flag '${flagRequest.flagName}' disabled`);
+        } else {
+          throw new Error(`Feature flag '${flagRequest.flagName}' cannot be disabled - community protection`);
+        }
+      } else if (flagRequest.action === 'modify') {
+        // Apply modifications if specified
+        if (flagRequest.modifications) {
+          Object.assign(updatedFlag, flagRequest.modifications);
+          console.log(`🔄 Feature flag '${flagRequest.flagName}' modified`);
+        }
+      }
+
+      // Update the flag in the system
+      this.communityFeatureFlags[flagRequest.flagName] = updatedFlag;
+
+      // Record the change for audit trail
+      const changeRecord = {
+        flagName: flagRequest.flagName,
+        action: flagRequest.action,
+        previousState: currentFlag,
+        newState: updatedFlag,
+        liberationImpact,
+        timestamp: new Date().toISOString(),
+        changeId: `flag_change_${Date.now()}`
+      };
+
+      console.log(`✅ Feature flag change applied successfully: ${flagRequest.flagName}`);
+      return {
+        success: true,
+        updatedFlag,
+        changeRecord,
+        liberationProtected: true
+      };
+
+    } catch (error) {
+      console.error('🚨 Feature flag change application failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        flagName: flagRequest.flagName,
+        action: flagRequest.action,
+        liberationProtected: true
+      };
+    }
+  }
+
+  /**
+   * CROSS-SERVICE NOTIFICATION: Notify all services of feature flag changes
+   */
+  async notifyServicesOfFeatureFlagChange(flagName, updatedFlag) {
+    try {
+      console.log(`📢 Notifying services of feature flag change: ${flagName}`);
+
+      const notification = {
+        type: 'feature_flag_changed',
+        flagName,
+        newState: updatedFlag,
+        timestamp: new Date().toISOString(),
+        source: 'liberation_orchestrator'
+      };
+
+      // Notify all connected services
+      const notificationResults = [];
+
+      // Emit event for any listening services
+      this.emit('feature_flag_changed', notification);
+
+      // Notify specific services based on flag type
+      if (this.services) {
+        // Notify newsroom service if content-related flags changed
+        if (flagName.includes('content') || flagName.includes('newsroom')) {
+          try {
+            if (this.services.newsroomLiberationService && typeof this.services.newsroomLiberationService.handleFeatureFlagChange === 'function') {
+              await this.services.newsroomLiberationService.handleFeatureFlagChange(notification);
+              notificationResults.push({ service: 'newsroom', status: 'notified' });
+            }
+          } catch (error) {
+            console.warn('⚠️ Failed to notify newsroom service:', error.message);
+            notificationResults.push({ service: 'newsroom', status: 'failed', error: error.message });
+          }
+        }
+
+        // Notify events service if event-related flags changed
+        if (flagName.includes('event') || flagName.includes('cultural')) {
+          try {
+            if (this.services.eventsLiberationService && typeof this.services.eventsLiberationService.handleFeatureFlagChange === 'function') {
+              await this.services.eventsLiberationService.handleFeatureFlagChange(notification);
+              notificationResults.push({ service: 'events', status: 'notified' });
+            }
+          } catch (error) {
+            console.warn('⚠️ Failed to notify events service:', error.message);
+            notificationResults.push({ service: 'events', status: 'failed', error: error.message });
+          }
+        }
+
+        // Notify IVOR AI service if AI-related flags changed
+        if (flagName.includes('ai') || flagName.includes('ivor')) {
+          try {
+            if (this.services.ivorAILiberationService && typeof this.services.ivorAILiberationService.handleFeatureFlagChange === 'function') {
+              await this.services.ivorAILiberationService.handleFeatureFlagChange(notification);
+              notificationResults.push({ service: 'ivor', status: 'notified' });
+            }
+          } catch (error) {
+            console.warn('⚠️ Failed to notify IVOR AI service:', error.message);
+            notificationResults.push({ service: 'ivor', status: 'failed', error: error.message });
+          }
+        }
+      }
+
+      console.log(`✅ Service notifications completed for ${flagName}`);
+      return {
+        notificationsSent: notificationResults.length,
+        results: notificationResults,
+        success: true
+      };
+
+    } catch (error) {
+      console.error('🚨 Cross-service notification failed:', error);
+      return {
+        notificationsSent: 0,
+        results: [],
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * AGGREGATE LIBERATION METRICS: Combine health checks into overall metrics
    */
   aggregateLiberationMetrics(healthChecks) {
