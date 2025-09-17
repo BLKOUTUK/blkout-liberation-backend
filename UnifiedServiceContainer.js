@@ -103,11 +103,12 @@ class UnifiedServiceContainer {
 
     // Create instance with dependencies
     let instance;
-    if (dependencies.length === 0) {
+    const dependencyValues = Object.values(dependencies);
+    if (dependencyValues.length === 0) {
       instance = new ServiceClass();
     } else {
-      // Pass dependencies as constructor parameter
-      instance = new ServiceClass(dependencies);
+      // Pass dependencies as individual parameters using spread operator
+      instance = new ServiceClass(...dependencyValues);
     }
 
     // Store as singleton
