@@ -12,10 +12,13 @@ class EconomicJusticeService {
    * @returns {Object} - Revenue transparency object with 75% creator sovereignty
    */
   calculateRevenueTransparency(content) {
-    // Validate input
-    if (!content || !content.revenue) {
-      throw new Error('Content revenue data is required');
+    // Validate input - allow content without revenue for non-monetized content
+    if (!content) {
+      throw new Error('Content data is required');
     }
+
+    // Default revenue to 0 for non-monetized content
+    const revenue = content.revenue || 0;
 
     // Calculate 75% creator sovereignty
     const creatorShare = 0.75;
@@ -24,10 +27,10 @@ class EconomicJusticeService {
     return {
       creatorShare,
       platformShare,
-      totalRevenue: content.revenue,
-      creatorEarnings: content.revenue * creatorShare,
-      platformEarnings: content.revenue * platformShare,
-      communityBenefit: content.revenue * platformShare * 0.5, // 50% of platform share goes to community
+      totalRevenue: revenue,
+      creatorEarnings: revenue * creatorShare,
+      platformEarnings: revenue * platformShare,
+      communityBenefit: revenue * platformShare * 0.5, // 50% of platform share goes to community
       lastUpdated: new Date().toISOString()
     };
   }

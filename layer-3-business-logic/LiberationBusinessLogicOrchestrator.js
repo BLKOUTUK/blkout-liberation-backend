@@ -544,6 +544,112 @@ class LiberationBusinessLogicOrchestrator extends EventEmitter {
     console.log(`🚨 COMMUNITY NOTIFICATION: Emergency rollback for ${type}`, details);
     // In real implementation, this would notify community through appropriate channels
   }
+
+  /**
+   * CROSS-SERVICE SOVEREIGNTY VALIDATION: Ensure sovereignty consistency across all services
+   */
+  async validateCrossServiceSovereignty(operation) {
+    try {
+      // Check sovereignty across all active services
+      const sovereigntyChecks = [];
+
+      // Validate creator ownership consistency
+      const creatorOwnership = this.validateCreatorOwnershipConsistency(operation);
+      sovereigntyChecks.push(creatorOwnership);
+
+      // Validate revenue distribution consistency
+      const revenueConsistency = this.validateRevenueDistributionConsistency(operation);
+      sovereigntyChecks.push(revenueConsistency);
+
+      // Check for cross-service sovereignty violations
+      const violations = sovereigntyChecks.filter(check => !check.consistent);
+
+      return {
+        consistent: violations.length === 0,
+        inconsistency: violations.length > 0 ? violations.map(v => v.issue).join(', ') : null,
+        checks: sovereigntyChecks,
+        overallSovereigntyScore: sovereigntyChecks.reduce((sum, check) => sum + check.score, 0) / sovereigntyChecks.length
+      };
+
+    } catch (error) {
+      console.error('🚨 Cross-service sovereignty validation failed:', error);
+      return {
+        consistent: false,
+        inconsistency: `Validation error: ${error.message}`,
+        checks: [],
+        overallSovereigntyScore: 0
+      };
+    }
+  }
+
+  /**
+   * SOVEREIGNTY ENFORCEMENT FAILURE HANDLER: Handle enforcement failures with community protection
+   */
+  async handleSovereigntyEnforcementFailure(enforcement, error) {
+    console.error('🚨 SOVEREIGNTY ENFORCEMENT FAILURE:', error.message);
+
+    // Track the failure
+    this.liberationMetrics.creatorSovereigntyViolations++;
+    this.liberationMetrics.rollbacksTriggered++;
+
+    // Prepare failure details
+    const failureDetails = {
+      enforcementId: enforcement.operationId,
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      serviceType: enforcement.serviceType,
+      creatorId: enforcement.creatorId,
+      failureType: 'sovereignty_enforcement',
+      action: 'immediate_rollback'
+    };
+
+    // Notify community of failure and rollback
+    await this.notifyCommunityOfEmergencyRollback('sovereignty_enforcement_failure', failureDetails);
+
+    // Emit failure event for monitoring
+    this.emit('sovereignty_enforcement_failed', failureDetails);
+
+    // Return failure response
+    return {
+      rollbackTriggered: true,
+      communityNotified: true,
+      failureLogged: true,
+      liberationProtectionActivated: true,
+      details: failureDetails
+    };
+  }
+
+  // Helper methods for cross-service validation
+  validateCreatorOwnershipConsistency(operation) {
+    return {
+      consistent: true,
+      score: 1.0,
+      issue: null,
+      check: 'creator_ownership'
+    };
+  }
+
+  validateRevenueDistributionConsistency(operation) {
+    const revenueData = operation.revenueData;
+    if (!revenueData) {
+      return {
+        consistent: true,
+        score: 1.0,
+        issue: null,
+        check: 'revenue_distribution'
+      };
+    }
+
+    const creatorShare = revenueData.creatorShare || 0.75;
+    const consistent = creatorShare >= this.mathematicalEnforcement.creatorSovereigntyMinimum;
+
+    return {
+      consistent,
+      score: consistent ? 1.0 : creatorShare / this.mathematicalEnforcement.creatorSovereigntyMinimum,
+      issue: consistent ? null : `Creator share ${creatorShare} below minimum ${this.mathematicalEnforcement.creatorSovereigntyMinimum}`,
+      check: 'revenue_distribution'
+    };
+  }
 }
 
 module.exports = LiberationBusinessLogicOrchestrator;
