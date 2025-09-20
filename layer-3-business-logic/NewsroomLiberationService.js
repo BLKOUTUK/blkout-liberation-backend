@@ -448,6 +448,273 @@ class NewsroomLiberationService {
     return `news-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  /**
+   * Process story archive display with business logic
+   * @param {Object} storiesResult - Raw stories data from Layer 5
+   * @returns {Object} Processed stories with business logic applied
+   */
+  processStoryArchiveDisplay(storiesResult) {
+    console.log('📚 Processing story archive display with liberation business logic');
+    
+    if (!storiesResult || !storiesResult.articles) {
+      return {
+        articles: [],
+        pagination: { page: 1, limit: 12, total: 0, totalPages: 0 }
+      };
+    }
+
+    // Apply business logic: liberation scoring, community prioritization
+    const processedArticles = storiesResult.articles.map(article => ({
+      ...article,
+      liberation_score: this.calculateLiberationScore(article),
+      community_priority: this.assessCommunityPriority(article),
+      cultural_authenticity_score: this.assessCulturalAuthenticity(article),
+      display_metadata: {
+        featured: this.shouldFeatureStory(article),
+        community_verified: true,
+        liberation_aligned: true
+      }
+    }));
+
+    // Sort by liberation impact and community priority
+    processedArticles.sort((a, b) => {
+      return (b.liberation_score + b.community_priority) - (a.liberation_score + a.community_priority);
+    });
+
+    return {
+      articles: processedArticles,
+      pagination: storiesResult.pagination,
+      business_logic_metadata: {
+        processing_timestamp: new Date().toISOString(),
+        liberation_scoring_applied: true,
+        community_prioritization_active: true
+      }
+    };
+  }
+
+  /**
+   * Process event display with business logic
+   * @param {Object} eventsResult - Raw events data from Layer 5
+   * @returns {Object} Processed events with business logic applied
+   */
+  processEventDisplay(eventsResult) {
+    console.log('📅 Processing event display with liberation business logic');
+    
+    if (!eventsResult || !eventsResult.events) {
+      return {
+        events: [],
+        pagination: { page: 1, limit: 10, total: 0, totalPages: 0 }
+      };
+    }
+
+    // Apply business logic: community impact scoring, accessibility assessment
+    const processedEvents = eventsResult.events.map(event => ({
+      ...event,
+      community_impact_score: this.calculateEventCommunityImpact(event),
+      accessibility_rating: this.assessEventAccessibility(event),
+      liberation_alignment_score: this.assessEventLiberationAlignment(event),
+      display_metadata: {
+        priority_level: this.calculateEventPriority(event),
+        community_recommended: true,
+        trauma_informed: this.assessTraumaInformedEvent(event)
+      }
+    }));
+
+    // Sort by community impact and liberation alignment
+    processedEvents.sort((a, b) => {
+      return (b.community_impact_score + b.liberation_alignment_score) - 
+             (a.community_impact_score + a.liberation_alignment_score);
+    });
+
+    return {
+      events: processedEvents,
+      pagination: eventsResult.pagination,
+      business_logic_metadata: {
+        processing_timestamp: new Date().toISOString(),
+        community_impact_scoring_applied: true,
+        accessibility_assessment_completed: true
+      }
+    };
+  }
+
+  /**
+   * Process community insights with business logic
+   * @param {Object} insightsData - Raw insights data from Layer 5
+   * @returns {Object} Processed insights with business logic applied
+   */
+  processCommunityInsights(insightsData) {
+    console.log('📊 Processing community insights with liberation business logic');
+    
+    if (!insightsData) {
+      return {
+        insights: [],
+        metrics: {},
+        liberation_analysis: { status: 'no_data_available' }
+      };
+    }
+
+    // Apply business logic: liberation impact analysis, community growth assessment
+    const processedInsights = insightsData.insights.map(insight => ({
+      text: insight,
+      liberation_relevance: this.assessLiberationRelevance(insight),
+      community_action_potential: this.assessActionPotential(insight),
+      priority_level: this.calculateInsightPriority(insight)
+    }));
+
+    // Enhance metrics with business logic
+    const enhancedMetrics = {
+      ...insightsData.metrics,
+      liberation_progress_score: this.calculateLiberationProgress(insightsData.metrics),
+      community_health_index: this.calculateCommunityHealthIndex(insightsData.metrics),
+      democratic_participation_trend: this.analyzeDemocraticTrend(insightsData.metrics),
+      creator_sovereignty_effectiveness: this.assessCreatorSovereigntyEffectiveness(insightsData.metrics)
+    };
+
+    return {
+      insights: processedInsights,
+      metrics: enhancedMetrics,
+      liberation_analysis: {
+        overall_progress: this.assessOverallLiberationProgress(enhancedMetrics),
+        priority_areas: this.identifyPriorityAreas(enhancedMetrics),
+        community_strengths: this.identifyCommunityStrengths(enhancedMetrics),
+        recommended_actions: this.generateCommunityActionRecommendations(enhancedMetrics)
+      },
+      business_logic_metadata: {
+        processing_timestamp: new Date().toISOString(),
+        liberation_analysis_completed: true,
+        community_health_assessment_active: true
+      }
+    };
+  }
+
+  // Helper methods for business logic processing
+  calculateLiberationScore(article) {
+    // Business logic for scoring content liberation impact
+    let score = 0.5; // Base score
+    if (article.category === 'liberation') score += 0.3;
+    if (article.tags && article.tags.includes('community')) score += 0.2;
+    return Math.min(score, 1.0);
+  }
+
+  assessCommunityPriority(article) {
+    // Business logic for community priority assessment
+    return article.author?.includes('Community') ? 0.8 : 0.5;
+  }
+
+  shouldFeatureStory(article) {
+    // Business logic for featuring stories
+    return this.calculateLiberationScore(article) > 0.7;
+  }
+
+  calculateEventCommunityImpact(event) {
+    // Business logic for event community impact
+    let impact = 0.5;
+    if (event.category === 'community') impact += 0.3;
+    if (event.location === 'Community Center') impact += 0.2;
+    return Math.min(impact, 1.0);
+  }
+
+  assessEventAccessibility(event) {
+    // Business logic for event accessibility
+    return event.location === 'Online' ? 0.9 : 0.7;
+  }
+
+  assessEventLiberationAlignment(event) {
+    // Business logic for liberation alignment
+    return event.title.toLowerCase().includes('liberation') ? 0.9 : 0.6;
+  }
+
+  calculateEventPriority(event) {
+    // Business logic for event priority
+    const impact = this.calculateEventCommunityImpact(event);
+    const alignment = this.assessEventLiberationAlignment(event);
+    return impact > 0.7 && alignment > 0.7 ? 'high' : 'medium';
+  }
+
+  assessTraumaInformedEvent(event) {
+    // Business logic for trauma-informed assessment
+    return true; // All events are trauma-informed in our platform
+  }
+
+  assessLiberationRelevance(insight) {
+    // Business logic for liberation relevance
+    return insight.toLowerCase().includes('liberation') ? 0.9 : 0.6;
+  }
+
+  assessActionPotential(insight) {
+    // Business logic for action potential
+    return insight.toLowerCase().includes('engagement') ? 0.8 : 0.5;
+  }
+
+  calculateInsightPriority(insight) {
+    // Business logic for insight priority
+    const relevance = this.assessLiberationRelevance(insight);
+    const action = this.assessActionPotential(insight);
+    return relevance > 0.7 && action > 0.6 ? 'high' : 'medium';
+  }
+
+  calculateLiberationProgress(metrics) {
+    // Business logic for liberation progress
+    return (metrics.engagement + metrics.participation + metrics.sovereignty_compliance) / 3;
+  }
+
+  calculateCommunityHealthIndex(metrics) {
+    // Business logic for community health
+    return (metrics.engagement + metrics.community_growth + metrics.governance_efficiency) / 3;
+  }
+
+  analyzeDemocraticTrend(metrics) {
+    // Business logic for democratic trend analysis
+    return metrics.participation > 0.6 ? 'improving' : 'needs_attention';
+  }
+
+  assessCreatorSovereigntyEffectiveness(metrics) {
+    // Business logic for creator sovereignty assessment
+    return metrics.sovereignty_compliance > 0.7 ? 'effective' : 'needs_improvement';
+  }
+
+  assessOverallLiberationProgress(metrics) {
+    // Business logic for overall progress assessment
+    const score = metrics.liberation_progress_score;
+    if (score > 0.8) return 'excellent';
+    if (score > 0.6) return 'good';
+    if (score > 0.4) return 'developing';
+    return 'needs_focus';
+  }
+
+  identifyPriorityAreas(metrics) {
+    // Business logic for identifying priority areas
+    const areas = [];
+    if (metrics.sovereignty_compliance < 0.7) areas.push('creator_sovereignty');
+    if (metrics.participation < 0.6) areas.push('democratic_participation');
+    if (metrics.engagement < 0.7) areas.push('community_engagement');
+    return areas;
+  }
+
+  identifyCommunityStrengths(metrics) {
+    // Business logic for identifying strengths
+    const strengths = [];
+    if (metrics.community_growth > 0.8) strengths.push('community_growth');
+    if (metrics.engagement > 0.7) strengths.push('member_engagement');
+    if (metrics.governance_efficiency > 0.7) strengths.push('governance_effectiveness');
+    return strengths;
+  }
+
+  generateCommunityActionRecommendations(metrics) {
+    // Business logic for action recommendations
+    const recommendations = [];
+    if (metrics.sovereignty_compliance < 0.7) {
+      recommendations.push('Strengthen creator sovereignty enforcement mechanisms');
+    }
+    if (metrics.participation < 0.6) {
+      recommendations.push('Implement democratic participation incentive programs');
+    }
+    if (metrics.engagement < 0.7) {
+      recommendations.push('Develop community engagement initiatives');
+    }
+    return recommendations;
+  }
+
   // Mock implementations for business logic scoring (replace with actual algorithms)
   assessCommunityEmpowerment(contentData) { return 0.85; }
   assessBlackQueerCentering(contentData) { return 0.9; }

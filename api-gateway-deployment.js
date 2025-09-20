@@ -12,6 +12,9 @@ const cors = require('cors');
 const cluster = require('cluster');
 const os = require('os');
 
+// Import Layer 2 API Gateway with migrated endpoints
+const apiGatewayModule = require('./layer-2-api-gateway/api-gateway');
+
 /**
  * Community-Empowering API Gateway Configuration
  * Phase 2: Deploy API Gateway with community protection circuits
@@ -28,6 +31,9 @@ class CommunityAPIGatewayDeployment {
     };
     this.circuitBreakers = new Map();
     this.communityProtectionMiddleware = [];
+
+    // Initialize Layer 2 API Gateway instance
+    this.apiGateway = apiGatewayModule.gateway;
   }
 
   /**
@@ -659,6 +665,57 @@ class CommunityAPIGatewayDeployment {
           responseTimeTarget: 100
         }
       });
+    });
+
+    // === MIGRATED API ENDPOINTS (from Layer 1) ===
+
+    // Story Archive endpoint
+    this.app.get('/api/v1/story-archive', async (req, res) => {
+      try {
+        const result = await this.apiGateway.getStoryArchive(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'Story archive unavailable', details: error.message });
+      }
+    });
+
+    // Events endpoints
+    this.app.get('/api/v1/events', async (req, res) => {
+      try {
+        const result = await this.apiGateway.getEvents(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'Events unavailable', details: error.message });
+      }
+    });
+
+    this.app.post('/api/v1/events', async (req, res) => {
+      try {
+        const result = await this.apiGateway.createEvent(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'Event creation failed', details: error.message });
+      }
+    });
+
+    // Community Insights endpoint
+    this.app.get('/api/v1/community-insights', async (req, res) => {
+      try {
+        const result = await this.apiGateway.getCommunityInsights(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'Community insights unavailable', details: error.message });
+      }
+    });
+
+    // BLKOUTHUB webhook endpoint
+    this.app.post('/api/v1/webhooks/blkouthub', async (req, res) => {
+      try {
+        const result = await this.apiGateway.blkouthubWebhook(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'BLKOUTHUB webhook failed', details: error.message });
+      }
     });
 
     // Start periodic health monitoring

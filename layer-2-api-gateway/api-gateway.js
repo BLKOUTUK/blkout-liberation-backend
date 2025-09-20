@@ -7,8 +7,11 @@
  */
 
 // Import business logic services (Layer 3)
-const newsroomLiberationService = require('../layer-3-business-logic/NewsroomLiberationService');
+const NewsroomLiberationService = require('../layer-3-business-logic/NewsroomLiberationService');
 const economicJusticeService = require('../layer-3-business-logic/EconomicJusticeService');
+
+// Instantiate business logic services
+const newsroomLiberationService = new NewsroomLiberationService();
 
 // Import data sovereignty service (Layer 5)
 const DataSovereigntyService = require('../layer-5-data-sovereignty/DataSovereigntyService');
@@ -320,6 +323,289 @@ class LiberationAPIGateway {
   }
 
   /**
+   * Story Archive API endpoint - Layer 2 implementation
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async getStoryArchive(req, res) {
+    try {
+      console.log('📚 Processing story archive request');
+
+      const { page = '1', limit = '12', category = 'all', tag = 'all' } = req.query;
+      const pageNumber = parseInt(page, 10);
+      const limitNumber = parseInt(limit, 10);
+
+      // STEP 1: Delegate to Layer 5 Data Sovereignty Service (retrieval only)
+      console.log('🔒 Delegating to DataSovereigntyService (Layer 5) for story archive');
+      const storiesResult = await this.dataSovereigntyService.retrieveStoriesWithGovernance({
+        page: pageNumber,
+        limit: limitNumber,
+        category,
+        tag,
+        requesterId: 'story-archive-api',
+        accessType: 'public_read'
+      });
+
+      // STEP 2: Apply any business logic processing if needed (Layer 3)
+      // For story archive, we may need liberation scoring or content moderation
+      const businessLogicResult = this.businessLogicServices.newsroom.processStoryArchiveDisplay(storiesResult);
+
+      // STEP 3: Return response
+      const response = {
+        success: true,
+        articles: businessLogicResult.articles || [],
+        pagination: businessLogicResult.pagination || {
+          currentPage: pageNumber,
+          totalPages: 1,
+          totalArticles: 0,
+          articlesPerPage: limitNumber
+        },
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in getStoryArchive:', error);
+      res.status(500).json({
+        error: 'Failed to fetch story archive',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
+   * Events API endpoints - Layer 2 implementation
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async getEvents(req, res) {
+    try {
+      console.log('📅 Processing events retrieval request');
+
+      // STEP 1: Delegate to Layer 5 Data Sovereignty Service (retrieval only)
+      console.log('🔒 Delegating to DataSovereigntyService (Layer 5) for events');
+      const eventsResult = await this.dataSovereigntyService.retrieveEventsWithGovernance({
+        requesterId: 'events-api',
+        accessType: 'public_read'
+      });
+
+      // STEP 2: Apply business logic processing (Layer 3)
+      const businessLogicResult = this.businessLogicServices.newsroom.processEventDisplay(eventsResult);
+
+      // STEP 3: Return response
+      const response = {
+        success: true,
+        events: businessLogicResult.events || [],
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in getEvents:', error);
+      res.status(500).json({
+        error: 'Failed to fetch events',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
+   * Create Event API endpoint - Layer 2 implementation
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async createEvent(req, res) {
+    try {
+      console.log('📅 Processing event creation request');
+
+      const eventData = req.body;
+
+      if (!eventData.title || !eventData.description || !eventData.date) {
+        return res.status(400).json({
+          error: 'Missing required fields: title, description, date',
+          layer: 'API Gateway validation'
+        });
+      }
+
+      // STEP 1: Delegate to Layer 3 Business Logic Service (validation and processing)
+      console.log('🧠 Delegating to business logic for event validation (Layer 3)');
+      const businessLogicResult = this.businessLogicServices.newsroom.validateAndProcessEvent(eventData);
+
+      if (businessLogicResult.error) {
+        return res.status(400).json({
+          error: businessLogicResult.error,
+          layer: 'Business Logic (Layer 3)'
+        });
+      }
+
+      // STEP 2: Delegate to Layer 5 Data Sovereignty Service (persistence only)
+      console.log('🔒 Delegating to DataSovereigntyService (Layer 5) for event storage');
+      const storageResult = await this.dataSovereigntyService.storeWithSovereignty({
+        data: businessLogicResult.event,
+        sovereigntyRequirements: {
+          communityId: 'blkout-community',
+          creatorControlled: true
+        },
+        operationType: 'event_creation'
+      });
+
+      // STEP 3: Return coordinated response
+      const response = {
+        success: true,
+        event: businessLogicResult.event,
+        businessLogicResult: businessLogicResult.businessLogicResult,
+        dataStorageResult: {
+          stored: storageResult.success,
+          sovereigntyConfirmed: storageResult.sovereigntyConfirmed
+        },
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.status(201).json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in createEvent:', error);
+      res.status(500).json({
+        error: 'Failed to create event',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
+   * BLKOUTHUB Webhook endpoint - Layer 2 implementation
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async blkouthubWebhook(req, res) {
+    try {
+      console.log('🔗 Processing BLKOUTHUB webhook request');
+
+      const { action, contentType, contentId, moderatorId } = req.body;
+
+      if (action !== 'approved') {
+        return res.status(200).json({ message: 'Only approved content is sent to BLKOUTHUB' });
+      }
+
+      if (!contentType || !contentId) {
+        return res.status(400).json({
+          error: 'Missing required fields: contentType, contentId',
+          layer: 'API Gateway validation'
+        });
+      }
+
+      // STEP 1: Retrieve content from Layer 5 (Data operations only)
+      console.log('🔒 Retrieving content for BLKOUTHUB (Layer 5)');
+      const content = await this.dataSovereigntyService.retrieveWithGovernance({
+        dataId: contentId,
+        dataType: contentType,
+        requesterId: 'blkouthub-webhook',
+        accessType: 'webhook_read'
+      });
+
+      // STEP 2: Delegate formatting and webhook logic to Layer 3 (Business logic only)
+      console.log('🧠 Delegating BLKOUTHUB formatting (Layer 3)');
+      const webhookResult = this.businessLogicServices.newsroom.formatContentForBlkouthub(
+        content,
+        contentType
+      );
+
+      // STEP 3: Log webhook activity in Layer 5
+      await this.dataSovereigntyService.trackDataOperation({
+        operationType: 'blkouthub_webhook',
+        contentId,
+        contentType,
+        moderatorId,
+        webhookResult,
+        timestamp: new Date()
+      });
+
+      // STEP 4: Return response
+      const response = {
+        success: true,
+        message: `${contentType} successfully formatted for BLKOUTHUB`,
+        webhookData: webhookResult,
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in blkouthubWebhook:', error);
+      res.status(500).json({
+        error: 'BLKOUTHUB webhook processing failed',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
+   * Community Insights API endpoint - Layer 2 implementation
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async getCommunityInsights(req, res) {
+    try {
+      console.log('📊 Processing community insights request');
+
+      // STEP 1: Delegate to Layer 5 Data Sovereignty Service (aggregation queries only)
+      console.log('🔒 Delegating to DataSovereigntyService (Layer 5) for community data');
+      const communityData = await this.dataSovereigntyService.retrieveCommunityInsightsWithGovernance({
+        requesterId: 'community-insights-api',
+        accessType: 'community_read'
+      });
+
+      // STEP 2: Delegate analytics and calculations to Layer 3 (Business logic only)
+      console.log('🧠 Delegating insights calculation (Layer 3)');
+      const insightsResult = this.businessLogicServices.newsroom.processCommunityInsights(communityData);
+
+      // STEP 3: Return response
+      const response = {
+        success: true,
+        insights: insightsResult.insights,
+        metrics: insightsResult.metrics,
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in getCommunityInsights:', error);
+      res.status(500).json({
+        error: 'Failed to fetch community insights',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
    * Health check endpoint for layer separation monitoring
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
@@ -373,10 +659,20 @@ const liberationAPIGateway = new LiberationAPIGateway();
 
 // Export API endpoint functions for Express routing
 module.exports = {
+  // Original endpoints
   createNewsContent: (req, res) => liberationAPIGateway.createNewsContent(req, res),
   getNewsContent: (req, res) => liberationAPIGateway.getNewsContent(req, res),
   moderateContent: (req, res) => liberationAPIGateway.moderateContent(req, res),
   calculateRevenueTransparency: (req, res) => liberationAPIGateway.calculateRevenueTransparency(req, res),
+
+  // Migrated endpoints from Layer 1
+  getStoryArchive: (req, res) => liberationAPIGateway.getStoryArchive(req, res),
+  getEvents: (req, res) => liberationAPIGateway.getEvents(req, res),
+  createEvent: (req, res) => liberationAPIGateway.createEvent(req, res),
+  blkouthubWebhook: (req, res) => liberationAPIGateway.blkouthubWebhook(req, res),
+  getCommunityInsights: (req, res) => liberationAPIGateway.getCommunityInsights(req, res),
+
+  // Health check
   healthCheck: (req, res) => liberationAPIGateway.healthCheck(req, res),
 
   // Export the gateway instance for testing

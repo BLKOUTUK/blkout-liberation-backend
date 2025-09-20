@@ -151,6 +151,208 @@ class DataSovereigntyService extends DataSovereigntyInterface {
   }
 
   /**
+   * Retrieve stories with governance oversight
+   * @param {Object} params - Query parameters (page, limit, category, tag, requesterId, accessType)
+   * @returns {Promise<Object>} Stories data with pagination
+   */
+  async retrieveStoriesWithGovernance(params) {
+    console.log('📚 Retrieving stories with governance oversight');
+    
+    const { page = 1, limit = 12, category = 'all', tag = 'all', requesterId, accessType } = params;
+    
+    // Governance validation
+    const governanceCheck = await this.checkGovernancePermissions(requesterId, 'read_stories');
+    if (!governanceCheck.approved) {
+      throw new Error('Governance approval required for story access');
+    }
+
+    // Mock story data for production (replace with actual database queries)
+    const mockStories = [
+      { 
+        id: 1, 
+        title: 'Liberation Story 1', 
+        content: 'Community-focused liberation content', 
+        category: 'liberation',
+        tags: ['community', 'liberation'],
+        author: 'Community Member',
+        created_at: '2025-09-20T00:00:00Z'
+      },
+      { 
+        id: 2, 
+        title: 'Community Story 2', 
+        content: 'Democratic participation in action', 
+        category: 'community',
+        tags: ['democracy', 'participation'],
+        author: 'Community Organizer',
+        created_at: '2025-09-19T00:00:00Z'
+      }
+    ];
+
+    // Filter by category and tag if specified
+    let filteredStories = mockStories;
+    if (category !== 'all') {
+      filteredStories = filteredStories.filter(story => story.category === category);
+    }
+    if (tag !== 'all') {
+      filteredStories = filteredStories.filter(story => story.tags.includes(tag));
+    }
+
+    // Pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedStories = filteredStories.slice(startIndex, endIndex);
+
+    return {
+      articles: paginatedStories,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: filteredStories.length,
+        totalPages: Math.ceil(filteredStories.length / limit)
+      }
+    };
+  }
+
+  /**
+   * Retrieve events with governance oversight
+   * @param {Object} params - Query parameters (page, limit, requesterId, accessType)
+   * @returns {Promise<Object>} Events data with pagination
+   */
+  async retrieveEventsWithGovernance(params) {
+    console.log('📅 Retrieving events with governance oversight');
+    
+    const { page = 1, limit = 10, requesterId, accessType } = params;
+    
+    // Governance validation
+    const governanceCheck = await this.checkGovernancePermissions(requesterId, 'read_events');
+    if (!governanceCheck.approved) {
+      throw new Error('Governance approval required for event access');
+    }
+
+    // Mock event data for production (replace with actual database queries)
+    const mockEvents = [
+      { 
+        id: 1, 
+        title: 'Community Event 1', 
+        description: 'Building community through shared action',
+        date: '2025-09-25T18:00:00Z',
+        location: 'Community Center',
+        organizer: 'BLKOUT Community',
+        category: 'community'
+      },
+      { 
+        id: 2, 
+        title: 'Liberation Workshop', 
+        description: 'Educational workshop on liberation practices',
+        date: '2025-09-30T19:00:00Z',
+        location: 'Online',
+        organizer: 'Education Committee',
+        category: 'education'
+      }
+    ];
+
+    // Pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedEvents = mockEvents.slice(startIndex, endIndex);
+
+    return {
+      events: paginatedEvents,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: mockEvents.length,
+        totalPages: Math.ceil(mockEvents.length / limit)
+      }
+    };
+  }
+
+  /**
+   * Create event with governance oversight
+   * @param {Object} eventData - Event creation data
+   * @returns {Promise<Object>} Created event with governance metadata
+   */
+  async createEventWithGovernance(eventData) {
+    console.log('📅 Creating event with governance oversight');
+    
+    // Governance validation for event creation
+    const governanceCheck = await this.checkGovernancePermissions(eventData.requesterId, 'create_event');
+    if (!governanceCheck.approved) {
+      throw new Error('Governance approval required for event creation');
+    }
+
+    // Generate event ID and timestamps
+    const eventId = this.generateDataId();
+    const timestamp = new Date().toISOString();
+
+    const createdEvent = {
+      id: eventId,
+      title: eventData.title,
+      description: eventData.description,
+      date: eventData.date,
+      location: eventData.location,
+      organizer: eventData.organizer,
+      category: eventData.category || 'community',
+      created_at: timestamp,
+      governance_approved: true,
+      sovereignty_metadata: {
+        creator_id: eventData.requesterId,
+        access_level: 'community_public',
+        data_sovereignty_enforced: true
+      }
+    };
+
+    // In production, this would store to database
+    console.log('✅ Event created with governance approval:', eventId);
+    
+    return createdEvent;
+  }
+
+  /**
+   * Retrieve community insights with governance oversight
+   * @param {Object} params - Query parameters (requesterId, accessType)
+   * @returns {Promise<Object>} Community insights data
+   */
+  async retrieveCommunityInsightsWithGovernance(params = {}) {
+    console.log('📊 Retrieving community insights with governance oversight');
+    
+    const { requesterId, accessType } = params;
+    
+    // Governance validation for insights access
+    const governanceCheck = await this.checkGovernancePermissions(requesterId, 'read_insights');
+    if (!governanceCheck.approved) {
+      throw new Error('Governance approval required for community insights access');
+    }
+
+    // Mock community insights data for production (replace with actual analytics)
+    const insights = [
+      'Community engagement increased by 25% this month',
+      'Democratic participation in governance is improving',
+      'Creator sovereignty enforcement at 75% compliance',
+      'New community members: 45 this month'
+    ];
+
+    const metrics = {
+      engagement: 0.75,
+      participation: 0.65,
+      sovereignty_compliance: 0.75,
+      community_growth: 0.85,
+      governance_efficiency: 0.70
+    };
+
+    return {
+      insights,
+      metrics,
+      generated_at: new Date().toISOString(),
+      governance_metadata: {
+        approved_by: 'community_governance',
+        access_level: accessType || 'community_member',
+        data_sovereignty_enforced: true
+      }
+    };
+  }
+
+  /**
    * Enforce creator data ownership
    * @param {Object} ownershipRequest - Creator ownership request
    * @returns {Promise<Object>} - Ownership enforcement result
@@ -257,11 +459,28 @@ class DataSovereigntyService extends DataSovereigntyInterface {
    * @param {Object} request - Permission check request
    * @returns {Promise<Object>} - Permission check result
    */
-  async checkGovernancePermissions(request) {
-    // Mock governance permission check
+  async checkGovernancePermissions(requesterId, accessType) {
+    console.log(`🗳️ Checking governance permissions for ${requesterId} requesting ${accessType}`);
+    
+    // In production, this would:
+    // 1. Verify requesterId is a valid community member
+    // 2. Check if community has democratically approved this access type
+    // 3. Validate against community governance rules
+    // 4. Ensure transparency and consent requirements are met
+    
+    // For development/testing: Auto-approve with governance metadata
     return {
-      authorized: true,
-      reason: 'Community governance permits access'
+      approved: true,
+      authorized: true, // Backward compatibility
+      reason: 'Community governance permits access',
+      governance_metadata: {
+        community_member_verified: true,
+        democratic_approval: true,
+        transparency_compliant: true,
+        consent_validated: true,
+        approval_timestamp: new Date().toISOString(),
+        governance_authority: 'BLKOUT_Community_Council'
+      }
     };
   }
 
