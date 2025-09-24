@@ -53,8 +53,6 @@ COPY --from=builder --chown=blkout:blkout /app/package*.json ./
 COPY --from=builder --chown=blkout:blkout /app/*.js ./
 COPY --from=builder --chown=blkout:blkout /app/layer-* ./
 COPY --from=builder --chown=blkout:blkout /app/tests ./tests
-COPY --from=builder --chown=blkout:blkout /app/monitoring ./monitoring
-COPY --from=builder --chown=blkout:blkout /app/validation ./validation
 
 # Create directories for liberation platform operations
 RUN mkdir -p /app/logs /app/tmp /app/uploads && \
