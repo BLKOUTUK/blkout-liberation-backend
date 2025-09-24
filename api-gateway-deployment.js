@@ -13,7 +13,7 @@ const cluster = require('cluster');
 const os = require('os');
 
 // Import Layer 2 API Gateway with migrated endpoints
-const apiGatewayModule = require('./layer-2-api-gateway/api-gateway');
+const apiGatewayModule = require('./api-gateway');
 
 /**
  * Community-Empowering API Gateway Configuration

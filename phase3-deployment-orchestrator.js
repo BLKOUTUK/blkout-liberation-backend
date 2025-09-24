@@ -17,10 +17,10 @@ const helmet = require('helmet');
 const cors = require('cors');
 
 // Liberation Business Logic Services
-const LiberationBusinessLogicOrchestrator = require('./layer-3-business-logic/LiberationBusinessLogicOrchestrator');
-const IvorAILiberationService = require('./layer-3-business-logic/IvorAILiberationService');
-const EventsLiberationService = require('./layer-3-business-logic/EventsLiberationService');
-const NewsroomLiberationService = require('./layer-3-business-logic/NewsroomLiberationService');
+const LiberationBusinessLogicOrchestrator = require('./LiberationBusinessLogicOrchestrator');
+const IvorAILiberationService = require('./IvorAILiberationService');
+const EventsLiberationService = require('./EventsLiberationService');
+const NewsroomLiberationService = require('./NewsroomLiberationService');
 
 class Phase3DeploymentOrchestrator {
   constructor(options = {}) {
@@ -558,34 +558,6 @@ class Phase3DeploymentOrchestrator {
       try {
         const enforcement = await this.liberationOrchestrator.enforceMathematicalCreatorSovereignty(req.body);
         res.json(enforcement);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    });
-
-    // Moderation queue endpoints
-    this.app.post('/api/moderation-queue', async (req, res) => {
-      try {
-        const result = await this.liberationOrchestrator.submitToModerationQueue(req, res);
-        res.json(result);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    });
-
-    this.app.get('/api/moderation-queue', async (req, res) => {
-      try {
-        const result = await this.liberationOrchestrator.getModerationQueue(req, res);
-        res.json(result);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    });
-
-    this.app.put('/api/moderation-queue/:id', async (req, res) => {
-      try {
-        const result = await this.liberationOrchestrator.updateModerationItem(req, res);
-        res.json(result);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
