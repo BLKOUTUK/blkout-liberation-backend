@@ -16,13 +16,7 @@ RUN apk add --no-cache \
     git \
     curl
 
-# Copy package files for dependency installation
-COPY package*.json ./
-COPY tsconfig.json ./
-
-# Install dependencies with liberation focus
-RUN npm ci --only=production && \
-    npm cache clean --force
+# Copy package files for dependency installation\nCOPY package*.json ./\n\n# Install dependencies with liberation focus\nRUN npm ci --only=production && \\\n    npm cache clean --force
 
 # Copy source code
 COPY . .
