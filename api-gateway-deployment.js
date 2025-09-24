@@ -718,6 +718,34 @@ class CommunityAPIGatewayDeployment {
       }
     });
 
+    // Moderation queue endpoints
+    this.app.post('/api/moderation-queue', async (req, res) => {
+      try {
+        const result = await this.apiGateway.submitToModerationQueue(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'Moderation queue submission failed', details: error.message });
+      }
+    });
+
+    this.app.get('/api/moderation-queue', async (req, res) => {
+      try {
+        const result = await this.apiGateway.getModerationQueue(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'Moderation queue retrieval failed', details: error.message });
+      }
+    });
+
+    this.app.put('/api/moderation-queue/:id', async (req, res) => {
+      try {
+        const result = await this.apiGateway.updateModerationItem(req, res);
+        return result;
+      } catch (error) {
+        res.status(500).json({ error: 'Moderation item update failed', details: error.message });
+      }
+    });
+
     // Start periodic health monitoring
     this.healthCheckInterval = setInterval(async () => {
       await this.monitorLiberationHealth();

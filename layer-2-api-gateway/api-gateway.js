@@ -606,6 +606,256 @@ class LiberationAPIGateway {
   }
 
   /**
+   * SUBMIT TO MODERATION QUEUE: Submit content for human-in-the-loop moderation
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async submitToModerationQueue(req, res) {
+    try {
+      console.log('⚖️ Processing content submission to moderation queue');
+
+      const contentData = req.body;
+
+      if (!contentData || !contentData.title || !contentData.content) {
+        return res.status(400).json({
+          error: 'Content title and content are required',
+          layer: 'API Gateway validation'
+        });
+      }
+
+      // Default to 'article' type if not specified, or check for 'event'
+      const contentType = contentData.type || 'article';
+
+      // STEP 1: Apply business logic validation (Layer 3)
+      console.log('🧠 Delegating to NewsroomLiberationService for content validation (Layer 3)');
+      
+      // Create moderation submission object
+      const moderationSubmission = {
+        id: `mod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: contentType,
+        title: contentData.title,
+        content: contentData.content,
+        author: contentData.author || 'Anonymous',
+        submittedAt: new Date().toISOString(),
+        category: contentData.category || 'general',
+        status: 'pending',
+        priority: contentData.priority || 'medium',
+        moderationNotes: '',
+        flaggedReasons: [],
+        ...contentData // Include other optional fields
+      };
+      
+      // Use business logic for content validation
+      const businessLogicResult = this.businessLogicServices.newsroom.createLiberationContent(moderationSubmission);
+
+      // Check if business logic returned an error or guidance
+      if (businessLogicResult.error) {
+        return res.status(400).json({
+          error: businessLogicResult.error,
+          businessLogicResult: businessLogicResult.businessLogicResult,
+          layer: 'Business Logic (Layer 3)'
+        });
+      }
+
+      // STEP 2: Store in moderation queue (Layer 5 - Data Sovereignty)
+      console.log('🔒 Storing in moderation queue (Layer 5)');
+      const storageResult = await this.dataSovereigntyService.storeWithSovereignty({
+        data: moderationSubmission,
+        sovereigntyRequirements: {
+          communityId: 'moderation-queue',
+          creatorControlled: true
+        },
+        operationType: 'moderation_queue_submission'
+      });
+
+      // STEP 3: Return response
+      const response = {
+        success: true,
+        submissionId: moderationSubmission.id,
+        submission: moderationSubmission,
+        dataStorageResult: {
+          stored: storageResult.success,
+          sovereigntyConfirmed: storageResult.sovereigntyConfirmed
+        },
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.status(201).json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in submitToModerationQueue:', error);
+      res.status(500).json({
+        error: 'Failed to submit to moderation queue',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
+   * GET MODERATION QUEUE: Retrieve pending moderation items
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async getModerationQueue(req, res) {
+    try {
+      console.log('⚖️ Processing moderation queue retrieval request');
+
+      // STEP 1: Retrieve moderation queue items (Layer 5 - Data Sovereignty)
+      console.log('🔒 Retrieving from moderation queue (Layer 5)');
+      const queueResult = await this.dataSovereigntyService.retrieveModerationQueueWithGovernance({
+        requesterId: 'moderation-api',
+        accessType: 'moderation_read',
+        statusFilter: req.query.status || 'pending'  // Default to pending items
+      });
+
+      // STEP 2: Apply business logic processing if needed (Layer 3)
+      // For now, we'll return the raw queue items
+      
+      // If queueResult is not an array, ensure we return an array to prevent .map errors
+      const queueItems = Array.isArray(queueResult) ? queueResult : 
+                         (queueResult && Array.isArray(queueResult.items) ? queueResult.items : []);
+
+      // STEP 3: Return response
+      const response = {
+        success: true,
+        queueItems: queueItems,
+        count: queueItems.length,
+        dataRetrievalResult: {
+          retrieved: true,
+          governanceCompliant: true
+        },
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in getModerationQueue:', error);
+      res.status(500).json({
+        error: 'Failed to retrieve moderation queue',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
+   * UPDATE MODERATION ITEM: Approve or reject moderation queue items
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async updateModerationItem(req, res) {
+    try {
+      console.log('⚖️ Processing moderation item update request');
+
+      const { id } = req.params;
+      const moderationDecision = req.body;
+
+      if (!id) {
+        return res.status(400).json({
+          error: 'Moderation item ID is required',
+          layer: 'API Gateway validation'
+        });
+      }
+
+      if (!moderationDecision.action || !['approve', 'reject'].includes(moderationDecision.action)) {
+        return res.status(400).json({
+          error: 'Moderation action (approve/reject) is required',
+          layer: 'API Gateway validation'
+        });
+      }
+
+      // STEP 1: Retrieve the pending item (Layer 5)
+      console.log('🔒 Retrieving moderation item (Layer 5)');
+      const item = await this.dataSovereigntyService.retrieveWithGovernance({
+        dataId: id,
+        requesterId: 'moderation-system',
+        accessType: 'moderation_read'
+      });
+
+      if (!item) {
+        return res.status(404).json({
+          error: 'Moderation item not found',
+          layer: 'Data Sovereignty (Layer 5)'
+        });
+      }
+
+      // STEP 2: Apply moderation decision with business logic (Layer 3)
+      console.log('🧠 Applying moderation decision (Layer 3)');
+      const moderationRequest = {
+        ...item,
+        decision: moderationDecision.action,
+        moderatorNotes: moderationDecision.notes || '',
+        moderatorId: moderationDecision.moderatorId || 'system'
+      };
+      
+      const businessLogicResult = this.businessLogicServices.newsroom.moderateContentWithCommunity(
+        item,
+        moderationRequest
+      );
+
+      // STEP 3: Update moderation status and handle content (Layer 5)
+      const updatedItem = {
+        ...item,
+        status: moderationDecision.action === 'approve' ? 'approved' : 'rejected',
+        moderationNotes: moderationDecision.notes || '',
+        moderatedAt: new Date().toISOString(),
+        moderatorId: moderationDecision.moderatorId || 'system'
+      };
+
+      const storageResult = await this.dataSovereigntyService.storeWithSovereignty({
+        data: updatedItem,
+        sovereigntyRequirements: {
+          communityId: 'moderation-queue',
+          creatorControlled: true
+        },
+        operationType: 'moderation_queue_update'
+      });
+
+      // If approved, potentially store to main content repository
+      if (moderationDecision.action === 'approve') {
+        // Additional logic could go here to move content to the main repository
+      }
+
+      // STEP 4: Return response
+      const response = {
+        success: true,
+        itemId: id,
+        updatedItem: updatedItem,
+        moderationResult: businessLogicResult,
+        dataStorageResult: {
+          stored: storageResult.success,
+          sovereigntyConfirmed: storageResult.sovereigntyConfirmed
+        },
+        layerSeparation: {
+          businessLogicLayer: 3,
+          dataSovereigntyLayer: 5,
+          separationCompliant: true
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('🚨 API Gateway error in updateModerationItem:', error);
+      res.status(500).json({
+        error: 'Failed to update moderation item',
+        details: error.message,
+        layer: 'API Gateway (Layer 2)'
+      });
+    }
+  }
+
+  /**
    * Health check endpoint for layer separation monitoring
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
@@ -671,6 +921,11 @@ module.exports = {
   createEvent: (req, res) => liberationAPIGateway.createEvent(req, res),
   blkouthubWebhook: (req, res) => liberationAPIGateway.blkouthubWebhook(req, res),
   getCommunityInsights: (req, res) => liberationAPIGateway.getCommunityInsights(req, res),
+
+  // New moderation queue endpoints
+  submitToModerationQueue: (req, res) => liberationAPIGateway.submitToModerationQueue(req, res),
+  getModerationQueue: (req, res) => liberationAPIGateway.getModerationQueue(req, res),
+  updateModerationItem: (req, res) => liberationAPIGateway.updateModerationItem(req, res),
 
   // Health check
   healthCheck: (req, res) => liberationAPIGateway.healthCheck(req, res),

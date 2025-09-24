@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "phase3-deployment-orchestrator.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "layer-2-api-gateway/**/*",
+          "layer-3-business-logic/**/*", 
+          "layer-5-data-sovereignty/**/*",
+          "dependency-injection/**/*",
+          "infrastructure/**/*",
+          "package.json",
+          "package-lock.json"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/moderation-queue",
+      "dest": "/phase3-deployment-orchestrator.js"
+    },
+    {
+      "src": "/api/moderation-queue/:id",
+      "dest": "/phase3-deployment-orchestrator.js"
+    },
+    {
+      "src": "/api/v1/(.*)",
+      "dest": "/phase3-deployment-orchestrator.js"
+    },
+    {
+      "src": "/health",
+      "dest": "/phase3-deployment-orchestrator.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

@@ -563,6 +563,34 @@ class Phase3DeploymentOrchestrator {
       }
     });
 
+    // Moderation queue endpoints
+    this.app.post('/api/moderation-queue', async (req, res) => {
+      try {
+        const result = await this.liberationOrchestrator.submitToModerationQueue(req, res);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.app.get('/api/moderation-queue', async (req, res) => {
+      try {
+        const result = await this.liberationOrchestrator.getModerationQueue(req, res);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.app.put('/api/moderation-queue/:id', async (req, res) => {
+      try {
+        const result = await this.liberationOrchestrator.updateModerationItem(req, res);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     console.log('   🛤️ Phase 3 business logic routes configured');
   }
 

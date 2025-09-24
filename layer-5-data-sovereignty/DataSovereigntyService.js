@@ -417,6 +417,136 @@ class DataSovereigntyService extends DataSovereigntyInterface {
     return Promise.resolve();
   }
 
+  /** 
+   * Retrieve moderation queue items with governance oversight
+   * @param {Object} params - Query parameters (requesterId, accessType, statusFilter)
+   * @returns {Promise<Array>} - Array of moderation queue items
+   */
+  async retrieveModerationQueueWithGovernance(params = {}) {
+    console.log('⚖️ Retrieving moderation queue with governance oversight');
+    
+    const { requesterId, accessType, statusFilter = 'pending' } = params;
+    
+    // Governance validation for moderation queue access
+    const governanceCheck = await this.checkGovernancePermissions(requesterId, 'read_moderation_queue');
+    if (!governanceCheck.approved) {
+      throw new Error('Governance approval required for moderation queue access');
+    }
+
+    // Mock moderation queue data for development (replace with actual database queries)
+    // This simulates items waiting for human-in-the-loop moderation
+    const mockQueueItems = [
+      {
+        id: 'sub-001',
+        type: 'article',
+        title: 'Community Organizing in South London: Building Black Power',
+        content: 'This article explores grassroots organizing strategies that have been effective in building community power in South London...',
+        author: 'Amara Johnson',
+        submittedAt: '2024-01-15T14:30:00Z',
+        category: 'community',
+        status: 'pending',
+        priority: 'high',
+        flaggedReasons: ['requires_cultural_authenticity_review']
+      },
+      {
+        id: 'sub-002',
+        type: 'event',
+        title: 'Liberation Tech Workshop: Digital Security for Activists',
+        content: 'Join us for a hands-on workshop covering digital security, privacy tools, and safe communication methods for community organizers...',
+        author: 'Tech Collective',
+        submittedAt: '2024-01-15T12:15:00Z',
+        category: 'education',
+        status: 'pending',
+        priority: 'medium'
+      },
+      {
+        id: 'sub-003',
+        type: 'article',
+        title: 'Decolonizing Mental Health: Community Healing Practices',
+        content: 'An examination of traditional healing practices and community-based mental health support systems...',
+        author: 'Dr. Keisha Williams',
+        submittedAt: '2024-01-14T16:45:00Z',
+        category: 'health',
+        status: 'pending',
+        priority: 'high'
+      }
+    ];
+
+    // Filter by status if specified
+    const filteredItems = statusFilter === 'all' 
+      ? mockQueueItems 
+      : mockQueueItems.filter(item => item.status === statusFilter);
+
+    console.log(`Returning ${filteredItems.length} moderation queue items with status: ${statusFilter}`);
+
+    return filteredItems;
+  }
+
+  /**
+   * Store moderation queue item with sovereignty requirements
+   * @param {Object} dataRequest - Moderation queue item storage request
+   * @returns {Promise<Object>} - Storage result with sovereignty metadata
+   */
+  async storeModerationQueueItem(dataRequest) {
+    // Validate input for moderation queue submission
+    if (!dataRequest || !dataRequest.data || !dataRequest.sovereigntyRequirements) {
+      throw new Error('Data and sovereignty requirements are required for moderation queue submission');
+    }
+
+    const { data, sovereigntyRequirements, operationType } = dataRequest;
+
+    // Validate community consent before storing in moderation queue
+    const consentValid = await this.validateCommunityConsent({
+      operationType: operationType || 'moderation_queue_submission',
+      dataType: data.type || 'article',
+      communityId: sovereigntyRequirements.communityId
+    });
+
+    if (!consentValid) {
+      throw new Error('Community consent validation failed - cannot submit to moderation queue');
+    }
+
+    // Add moderation queue metadata to data
+    const queueItem = {
+      ...data,
+      id: data.id || this.generateDataId(),
+      submittedAt: data.submittedAt || new Date().toISOString(),
+      status: data.status || 'pending',
+      priority: data.priority || 'medium',
+      moderationNotes: data.moderationNotes || '',
+      flaggedReasons: data.flaggedReasons || [],
+      sovereignty: {
+        communityOwned: true,
+        creatorControlled: sovereigntyRequirements.creatorControlled || false,
+        consentProvided: true,
+        storageDate: new Date().toISOString(),
+        governanceCompliant: true
+      }
+    };
+
+    // Simulate database storage in moderation queue
+    console.log(`Storing moderation queue item: ${queueItem.id}`);
+
+    // Track the moderation queue operation for transparency
+    await this.trackDataOperation({
+      operationType: 'moderation_queue_submission',
+      dataId: queueItem.id,
+      sovereigntyLevel: 'community-moderation-queue',
+      timestamp: new Date()
+    });
+
+    return {
+      success: true,
+      dataId: queueItem.id,
+      sovereigntyConfirmed: true,
+      storageMetadata: {
+        storedAt: new Date().toISOString(),
+        sovereigntyLevel: 'community-moderation-queue',
+        consentValid: true
+      }
+    };
+  }
+
   /**
    * Store news content in database (Legacy compatibility)
    * @param {Object} content - News content data
