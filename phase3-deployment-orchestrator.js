@@ -591,6 +591,39 @@ class Phase3DeploymentOrchestrator {
       }
     });
 
+    // Health check endpoint for container orchestration
+    this.app.get('/health', async (req, res) => {
+      try {
+        res.json({
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          service: 'liberation-backend-phase3',
+          phase: 3,
+          uptime: process.uptime()
+        });
+      } catch (error) {
+        res.status(500).json({ 
+          status: 'unhealthy', 
+          error: error.message 
+        });
+      }
+    });
+
+    // Liberation values health endpoint
+    this.app.get('/health/liberation-values', async (req, res) => {
+      try {
+        const healthCheck = await this.liberationOrchestrator.monitorLiberationMetrics();
+        res.json({
+          status: 'operational',
+          phase: 3,
+          businessLogic: 'revolutionary',
+          healthCheck
+        });
+      } catch (error) {
+        res.status(500).json({ status: 'error', error: error.message });
+      }
+    });
+
     console.log('   🛤️ Phase 3 business logic routes configured');
   }
 
