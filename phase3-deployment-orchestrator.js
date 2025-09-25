@@ -25,7 +25,7 @@ const NewsroomLiberationService = require('./NewsroomLiberationService');
 class Phase3DeploymentOrchestrator {
   constructor(options = {}) {
     this.app = express();
-    this.port = options.port || 3003;
+    this.port = options.port || process.env.PORT || 3000;
 
     // Phase 3 deployment configuration
     this.deploymentConfig = {
@@ -335,9 +335,9 @@ class Phase3DeploymentOrchestrator {
 
     // Initialize orchestrator with all services
     this.liberationOrchestrator = new LiberationBusinessLogicOrchestrator({
-      ivorAI: {},
-      events: {},
-      newsroom: {}
+      ivorAI: this.services.ivorAI,
+      events: this.services.events,
+      newsroom: this.services.newsroom
     });
 
     // Test mathematical enforcement
@@ -604,6 +604,23 @@ class Phase3DeploymentOrchestrator {
    */
   async performPostDeploymentValidation() {
     console.log('   ✅ Running post-deployment liberation validation...');
+
+    // Debug: Check if services are properly initialized
+    console.log('   🔍 Service availability check:');
+    console.log('      IVOR AI Service:', !!this.services.ivorAI);
+    console.log('      Events Service:', !!this.services.events);
+    console.log('      Newsroom Service:', !!this.services.newsroom);
+
+    // Check if service methods exist
+    if (this.services.ivorAI) {
+      console.log('      IVOR AI Health Check Method:', !!this.services.ivorAI.performLiberationHealthCheck);
+    }
+    if (this.services.events) {
+      console.log('      Events Health Check Method:', !!this.services.events.performEventsHealthCheck);
+    }
+    if (this.services.newsroom) {
+      console.log('      Newsroom Health Check Method:', !!this.services.newsroom.performNewsroomHealthCheck);
+    }
 
     // Final health check across all services
     const finalHealthChecks = await Promise.all([

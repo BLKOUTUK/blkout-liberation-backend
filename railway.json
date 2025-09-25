@@ -6,6 +6,12 @@
   "deploy": {
     "numReplicas": 1,
     "sleepApplication": false,
-    "restartPolicyType": "ON_FAILURE"
+    "restartPolicyType": "ON_FAILURE",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "3000"
   }
 }
